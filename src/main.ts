@@ -1225,6 +1225,6 @@ js: ${jsTime.toFixed(1)}ms
   };
 };
 
-document.fonts.ready.then(async () => {
+window.addEventListener("open", async () => {
   await make();
 });
