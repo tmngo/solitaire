@@ -9,6 +9,7 @@ import { Klondike, KlondikeDepot } from "./games/klondike";
 import { Sawayama } from "./games/sawayama";
 import { createTextureFromUrl, getSpritesheetUVs } from "./render";
 import { uuidv7obj } from "uuidv7";
+import spritesheetUrl from "./assets/card-spritesheet.png";
 
 type State = {
   // Tracks absolute order of cards for rendering
@@ -244,7 +245,7 @@ const make = async () => {
   // Load assets
   const [spritesheet, sampler] = await createTextureFromUrl(
     device,
-    "./assets/card-spritesheet.png",
+    spritesheetUrl,
     "nearest",
   );
   const canvas = document.createElement("canvas");
