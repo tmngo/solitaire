@@ -770,7 +770,6 @@ js: ${jsTime.toFixed(1)}ms
         entry.contentBoxSize[0].blockSize * devicePixelRatio;
       const canvas = entry.target;
       if (canvas instanceof HTMLCanvasElement) {
-        console.log({ width, height, devicePixelRatio, layoutWidth });
         const newWidth = Math.max(
           1,
           Math.min(width, device.limits.maxTextureDimension2D),
@@ -782,7 +781,6 @@ js: ${jsTime.toFixed(1)}ms
 
         canvas.width = newWidth;
         canvas.height = newHeight;
-        console.log(canvas.width, canvas.height);
         for (let i = KlondikeDepot.Tableau1; i <= KlondikeDepot.Tableau7; i++) {
           updateCardLocations(state, i, state.depots[i].cards.length);
         }
@@ -878,7 +876,6 @@ js: ${jsTime.toFixed(1)}ms
       // }
 
       if (game.isValidStart(state, result.a, result.n)) {
-        console.log("pointerdown:isValidStart");
         // Track selection
         state.selection.a = result.a;
         state.selection.aTop = result.a;
@@ -901,7 +898,6 @@ js: ${jsTime.toFixed(1)}ms
       dstIndex === KlondikeDepot.Stock &&
       state.depots[dstIndex].cards.length > 1
     ) {
-      console.log("pointerdown stock");
       const stock = state.depots[dstIndex];
       // const index = findCardIndex(
       //   state.cards,
@@ -1004,11 +1000,8 @@ js: ${jsTime.toFixed(1)}ms
       },
     );
 
-    console.log("automoveCounts", automoveCounts);
-
     for (let i = 0; i < automoveCounts.length; i++) {
       if (automoveCounts[i] > 0) {
-        // console.log("updateDepotCardLocations", KlondikeDepot.Foundation1 + i);
         updateCardLocations(
           state,
           KlondikeDepot.Foundation1 + i,
@@ -1032,7 +1025,6 @@ js: ${jsTime.toFixed(1)}ms
       x: worldPos.x - state.selection.offset.x + cardWidth / 2,
       y: worldPos.y - state.selection.offset.y + cardHeight / 2,
     });
-    console.log("getDestDepot:b0", b0);
     if (b0 === -1) {
       return undefined;
     }
@@ -1043,15 +1035,12 @@ js: ${jsTime.toFixed(1)}ms
     }
 
     const isValid = game.isValidMove(state, a, b, n);
-    console.log("getDestDepot:isValid", isValid);
     if (!isValid) {
       return undefined;
     }
 
     state.lastMove = { a, b, n };
     state.moves.push({ a, b, n });
-
-    console.log("state.moves", state.moves);
 
     if (game.score(state) === 52) {
       const stats = window.localStorage.getItem("stats");
@@ -1198,8 +1187,6 @@ js: ${jsTime.toFixed(1)}ms
       return;
     }
 
-    console.log("move", state.selection.a, state.selection.n);
-
     const target = {
       x: worldPos.x - state.selection.offset.x,
       y: worldPos.y - state.selection.offset.y,
@@ -1239,6 +1226,5 @@ js: ${jsTime.toFixed(1)}ms
 };
 
 document.fonts.ready.then(async () => {
-  const myapp = await make();
-  console.log({ myapp });
+  await make();
 });
