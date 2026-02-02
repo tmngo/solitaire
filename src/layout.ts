@@ -1,5 +1,4 @@
 import { Card } from "./cards";
-import { Vec2 } from "./math/vec2";
 
 export type Point2D = {
   x: number;

@@ -19,8 +19,6 @@ export const scale = (v: Vec3, a: number): Vec3 => [
 export const dot = (a: Vec3, b: Vec3) =>
   a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
-export const normalize = (a: Vec3) => [];
-
 export const transform = (m: Mat3, v: Vec3): Vec3 => [
   m[0] * v[0] + m[3] * v[1] + m[6] * v[2],
   m[1] * v[0] + m[4] * v[1] + m[7] * v[2],
@@ -39,7 +37,7 @@ export const rotateAxisAngle = (
   v: Vec3,
   origin: Vec3,
   axis: Vec3,
-  rad: number
+  rad: number,
 ) => {
   const u = axis;
   const s = Math.sin(rad);
@@ -60,9 +58,9 @@ export const rotateAxisAngle = (
         u[1] * u[2] * d + u[0] * s,
         u[2] * u[2] * d + c,
       ],
-      add(v, scale(origin, -1))
+      add(v, scale(origin, -1)),
     ),
-    origin
+    origin,
   );
 };
 

@@ -35,10 +35,6 @@ type State = {
   moves: { a: number; b: number; n: number }[];
 };
 
-const input = {
-  selection: { offset: { x: 0, y: 0 } },
-};
-
 const state: State = {
   cards: [],
   depots: [],

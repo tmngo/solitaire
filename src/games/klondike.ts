@@ -82,6 +82,7 @@ const initDepots = (
   }
 };
 
+// @ts-expect-error
 const isValidDraw = (state: { depots: Depot[] }, a: number, n: number) => {
   const depotA = state.depots[a];
   if (a === KlondikeDepot.Stock) {
