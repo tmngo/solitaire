@@ -1225,6 +1225,6 @@ js: ${jsTime.toFixed(1)}ms
   };
 };
 
-window.addEventListener("open", async () => {
+window.addEventListener("load", async () => {
   await make();
 });
