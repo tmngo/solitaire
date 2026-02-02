@@ -1238,7 +1238,7 @@ js: ${jsTime.toFixed(1)}ms
   };
 };
 
-(async () => {
+document.fonts.ready.then(async () => {
   const myapp = await make();
   console.log({ myapp });
-})();
+});
