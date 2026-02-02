@@ -1,4 +1,4 @@
-# solitaire-client
+# solitaire
 
 ```sh
 pnpm dev
