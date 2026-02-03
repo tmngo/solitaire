@@ -140,32 +140,6 @@ const make = async () => {
     `;
   }
 
-  const closeSidebar = () => {
-    canvas.style.transform = "translateX(0px)";
-    if (sidebarEl) {
-      sidebarEl.style.transform = "translateX(0px)";
-    }
-    isSidebarVisible = false;
-  };
-
-  const openSidebar = () => {
-    canvas.style.transform = "translateX(-144px)";
-    if (sidebarEl) {
-      sidebarEl.style.transform = "translateX(-144px)";
-    }
-    isSidebarVisible = true;
-  };
-
-  document
-    .querySelector<HTMLButtonElement>("#toggle-sidebar")
-    ?.addEventListener("pointerup", async () => {
-      if (isSidebarVisible) {
-        closeSidebar();
-      } else {
-        openSidebar();
-      }
-    });
-
   const selectEl = document.querySelector<HTMLSelectElement>("#select");
   if (selectEl) {
     selectEl.innerHTML = `
@@ -248,13 +222,38 @@ const make = async () => {
     spritesheetUrl,
     "nearest",
   );
-  const canvas = document.createElement("canvas");
-  canvas.style.height = "100%";
-  canvas.style.width = "100%";
-  document.body.appendChild(canvas);
+  const canvas = document.querySelector("canvas");
+  if (!canvas) return;
+
+  const closeSidebar = () => {
+    canvas.style.transform = "translateX(0px)";
+    if (sidebarEl) {
+      sidebarEl.style.transform = "translateX(0px)";
+    }
+    isSidebarVisible = false;
+  };
+
+  const openSidebar = () => {
+    canvas.style.transform = "translateX(-144px)";
+    if (sidebarEl) {
+      sidebarEl.style.transform = "translateX(-144px)";
+    }
+    isSidebarVisible = true;
+  };
+
+  document
+    .querySelector<HTMLButtonElement>("#toggle-sidebar")
+    ?.addEventListener("pointerup", async () => {
+      if (isSidebarVisible) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
 
   const context = canvas.getContext("webgpu");
   if (!context) {
+    document.body.innerHTML = `<div class="message">This browser isn't supported.</div>`;
     throw new Error("Failed to get WebGPU context.");
   }
   const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
