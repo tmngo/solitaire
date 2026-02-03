@@ -251,6 +251,8 @@ const make = async () => {
   const canvas = document.createElement("canvas");
   canvas.style.height = "100%";
   canvas.style.width = "100%";
+  document.body.appendChild(canvas);
+
   const context = canvas.getContext("webgpu");
   if (!context) {
     throw new Error("Failed to get WebGPU context.");
@@ -801,8 +803,6 @@ js: ${jsTime.toFixed(1)}ms
 
   requestID = window.requestAnimationFrame(renderFrame);
 
-  document.body.appendChild(canvas);
-
   const getMouseWorldPosition = (e: PointerEvent) => {
     const widthFitScale = layoutWidth / canvas.width;
     const heightFitScale = layoutHeight / canvas.height;
@@ -1225,6 +1225,6 @@ js: ${jsTime.toFixed(1)}ms
   };
 };
 
-window.addEventListener("load", async () => {
+document.fonts.ready.then(async () => {
   await make();
 });
