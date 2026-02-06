@@ -66,6 +66,7 @@ canvas {
   height: 100%;
   overscroll-behavior: contain;
   position: relative;
+  touch-action: none;
   transition: transform 0.25s ease;
   width: 100%;
   z-index: 0;
