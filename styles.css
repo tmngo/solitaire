@@ -20,6 +20,10 @@ html {
   box-sizing: border-box;
 }
 
+html, body {
+  overscroll-behavior: contain;
+}
+
 *,
 *::before,
 *::after {
