@@ -208,6 +208,7 @@ const make = async () => {
   // dial();
 
   if (!navigator.gpu) {
+    document.body.innerHTML = `<div class="message">This browser isn't supported.</div>`;
     throw new Error("WebGPU is not supported on this browser.");
   }
   const adapter = await navigator.gpu.requestAdapter();
@@ -253,7 +254,6 @@ const make = async () => {
 
   const context = canvas.getContext("webgpu");
   if (!context) {
-    document.body.innerHTML = `<div class="message">This browser isn't supported.</div>`;
     throw new Error("Failed to get WebGPU context.");
   }
   const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
