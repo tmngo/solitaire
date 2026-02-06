@@ -90,7 +90,7 @@ const isValidMove = (
   state: { depots: Depot[]; hand: CardSprite[] },
   a: number,
   b: number,
-  n: number
+  n: number,
 ) => {
   if (n === 0) return false;
   if (a === b) return false;
@@ -105,6 +105,10 @@ const isValidMove = (
   // if (a === KlondikeDepot.Waste && b === KlondikeDepot.Stock) {
   //   return n === depotA.cards.length;
   // }
+
+  if (a === KlondikeDepot.Stock && b !== KlondikeDepot.Waste) {
+    if (n !== 1) return false;
+  }
 
   const cards = state.hand;
   const firstCard = cards[0].card;
@@ -126,7 +130,7 @@ const isValidMove = (
       if (!topDepotCard) return true;
       const isValidRank = firstCard.rank === topDepotCard.rank - 1;
       const isValidSuit = getAlternateSuits(topDepotCard.suit).includes(
-        firstCard.suit
+        firstCard.suit,
       );
       return isValidRank && isValidSuit;
     }
@@ -146,7 +150,7 @@ const isValidMove = (
     if (!topDepotCard) return true;
     const isValidRank = firstCard.rank === topDepotCard.rank - 1;
     const isValidSuit = getAlternateSuits(topDepotCard.suit).includes(
-      firstCard.suit
+      firstCard.suit,
     );
     return isValidRank && isValidSuit;
   }
@@ -160,8 +164,8 @@ const getAutomaticMoves = (
     state: { depots: Depot[]; hand: CardSprite[] },
     a: number,
     b: number,
-    n: number
-  ) => void
+    n: number,
+  ) => void,
 ) => {
   const nextRanks = [0, 0, 0, 0];
   for (let i = KlondikeDepot.Foundation1; i <= KlondikeDepot.Foundation4; i++) {
@@ -260,7 +264,7 @@ const parseMove = (
   state: { depots: Depot[] },
   a: number,
   b: number,
-  n: number
+  n: number,
 ) => {
   if (a === KlondikeDepot.Stock && a === b && isStockEmpty(state)) {
     return [false, a, b, n] as const;
