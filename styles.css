@@ -32,6 +32,7 @@ body {
   height: 100%;
   margin: 0;
   /* border: solid rebeccapurple 10px; */
+  overscroll-behavior: contain;
   user-select: none;
 }
 
