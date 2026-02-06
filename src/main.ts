@@ -290,8 +290,9 @@ const make = async () => {
   /** Updates the location and position for `cardCount` cards from the top of the stack  */
   const updateCardLocations = (state: State, b: number, n: number) => {
     const [xScale, yScale] = Depot.getOffsetScale(state.depots[b]);
-    const PER_CARD_OFFSET = xScale < yScale ? cardColumnOffset() : 20;
     const depot = state.depots[b];
+    const PER_CARD_OFFSET =
+      xScale < yScale && depot.type === "column" ? cardColumnOffset() : 20;
     const cards =
       depot.type === "row-reverse" ? depot.cards.toReversed() : depot.cards;
     for (let i = cards.length - n; i < cards.length; i++) {
@@ -1045,6 +1046,7 @@ js: ${jsTime.toFixed(1)}ms
       },
     );
 
+    let hasAutomove = false;
     for (let i = 0; i < automoveCounts.length; i++) {
       if (automoveCounts[i] > 0) {
         updateCardLocations(
@@ -1052,7 +1054,16 @@ js: ${jsTime.toFixed(1)}ms
           KlondikeDepot.Foundation1 + i,
           automoveCounts[i],
         );
+        hasAutomove = true;
       }
+    }
+
+    if (hasAutomove && state.selection.a === KlondikeDepot.Stock) {
+      updateCardLocations(
+        state,
+        KlondikeDepot.Waste,
+        state.depots[KlondikeDepot.Waste].cards.length,
+      );
     }
 
     state.selection.a = undefined;
