@@ -60,6 +60,7 @@ canvas {
   /* border: solid salmon 1px; */
   /* border: solid var(--card-gold) 1px; */
   height: 100%;
+  overscroll-behavior: contain;
   position: relative;
   transition: transform 0.25s ease;
   width: 100%;
