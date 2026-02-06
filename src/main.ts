@@ -1270,9 +1270,11 @@ js: ${jsTime.toFixed(1)}ms
 
       const [xScale, yScale] = Depot.getOffsetScale(depot);
 
-      const topOffset = depot.cards.length * cardOffset;
+      const topOffset =
+        depot.cards.length === 0 ? 0 : (depot.cards.length - 1) * cardOffset;
       return Rect.hasPoint(point, {
-        ...depot.rect,
+        w: depot.rect.w,
+        h: Math.max(depot.rect.h, cardOffset + depot.rect.h * 0.5),
         x: depot.rect.x + topOffset * xScale,
         y: depot.rect.y + topOffset * yScale,
       });
