@@ -1,5 +1,5 @@
 import { Card } from "../cards";
-import { CardSprite, Depot } from "../layout";
+import { CardSprite, Depot, Rect } from "../layout";
 import {
   getAlternateSuits,
   isAlternating,
@@ -15,12 +15,60 @@ const isStockEmpty = (state: { depots: Depot[] }) =>
 //  ||
 // state.depots[KlondikeDepot.Stock].cards[0].card.suit !== Suit.Unknown;
 
+const initDepots = (
+  state: { depots: Depot[] },
+  left: number,
+  top: number,
+  cardWidth: number,
+  cardHeight: number,
+) => {
+  state.depots.push(
+    // Stock
+    {
+      id: 0,
+      rect: Rect.from(left, top, cardWidth, cardHeight),
+      type: "row",
+      cards: [],
+      visible: true,
+    },
+    // Wastepile
+    {
+      id: 1,
+      rect: Rect.from(left + 70 * 6, top, cardWidth, cardHeight),
+      type: "row-reverse",
+      cards: [],
+      visible: false,
+    },
+  );
+  // Foundation
+  for (let i = 0; i < 4; i++) {
+    state.depots.push({
+      id: state.depots.length,
+      rect: Rect.from(left + 70 * i, top + 90, cardWidth, cardHeight),
+      type: "pile",
+      cards: [],
+      visible: true,
+    });
+  }
+  // Tableau
+  for (let i = 0; i < 7; i++) {
+    state.depots.push({
+      id: state.depots.length,
+      rect: Rect.from(left + 70 * i, top + 180, cardWidth, cardHeight),
+      type: "column",
+      cards: [],
+      visible: true,
+    });
+  }
+};
+
 const isValidStart = (state: { depots: Depot[] }, a: number, n: number) => {
   const depotA = state.depots[a];
   if (a === KlondikeDepot.Stock) {
     return (
-      depotA.cards.length > 0 ||
-      state.depots[KlondikeDepot.Waste].cards.length > 0
+      n === 1 &&
+      (depotA.cards.length > 0 ||
+        state.depots[KlondikeDepot.Waste].cards.length > 0)
     );
   }
   if (depotA.cards.length === 0) {
@@ -226,6 +274,7 @@ export const Sawayama = {
   getAutomaticMoves,
   isStockEmpty,
   isRestockValid,
+  initDepots,
   isValidMove,
   isValidStart,
 };

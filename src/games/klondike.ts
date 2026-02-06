@@ -53,6 +53,7 @@ const initDepots = (
       rect: Rect.from(left, top, cardWidth, cardHeight),
       type: "pile",
       cards: [],
+      visible: true,
     },
     // Wastepile
     {
@@ -60,6 +61,7 @@ const initDepots = (
       rect: Rect.from(left + 70, top, cardWidth, cardHeight),
       type: "row",
       cards: [],
+      visible: false,
     },
   );
   // Foundation
@@ -69,6 +71,7 @@ const initDepots = (
       rect: Rect.from(left + 70 * i, top + 90, cardWidth, cardHeight),
       type: "pile",
       cards: [],
+      visible: true,
     });
   }
   // Tableau
@@ -78,6 +81,7 @@ const initDepots = (
       rect: Rect.from(left + 70 * i, top + 180, cardWidth, cardHeight),
       type: "column",
       cards: [],
+      visible: true,
     });
   }
 };

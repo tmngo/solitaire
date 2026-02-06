@@ -52,7 +52,7 @@ export type CardSprite = {
   visible?: boolean;
 };
 
-type DepotType = "column" | "pile" | "row";
+type DepotType = "column" | "pile" | "row" | "row-reverse";
 // depot    position in the layout comprising a pile
 // column   vertical spread line of cards
 // row      horizontal spread line of cards
@@ -63,14 +63,22 @@ export type Depot = {
   rect: Rect;
   type: DepotType;
   cards: CardSprite[];
+  visible: boolean;
 };
 
 const PER_CARD_OFFSET = 20;
 
-const getOffsetScale = (depot: Depot) => {
-  const xScale = depot.type === "row" ? 0.75 : 0;
-  const yScale = depot.type === "column" ? 1 : 0;
-  return [xScale, yScale] as const;
+const getOffsetScale = (depot: Depot): readonly [number, number] => {
+  switch (depot.type) {
+    case "row":
+      return [0.75, 0];
+    case "row-reverse":
+      return [-0.75, 0];
+    case "column":
+      return [0, 1];
+    default:
+      return [0, 0];
+  }
 };
 
 const getTopOffset = (depot: Depot) => {
@@ -78,6 +86,8 @@ const getTopOffset = (depot: Depot) => {
     return { x: 0, y: depot.cards.length * PER_CARD_OFFSET };
   } else if (depot.type === "row") {
     return { x: depot.cards.length * PER_CARD_OFFSET, y: 0 };
+  } else if (depot.type === "row-reverse") {
+    return { x: -depot.cards.length * PER_CARD_OFFSET, y: 0 };
   } else {
     return { x: 0, y: 0 };
   }

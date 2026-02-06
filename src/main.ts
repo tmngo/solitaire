@@ -5,7 +5,7 @@ import { Vec2 } from "./math/vec2";
 import shaderSource from "./shaders/shader.wgsl?raw";
 import { Vec3 } from "./math/vec3";
 import { CardSprite, Depot, Point2D, Rect } from "./layout";
-import { Klondike, KlondikeDepot } from "./games/klondike";
+import { KlondikeDepot } from "./games/klondike";
 import { Sawayama } from "./games/sawayama";
 import { createTextureFromUrl, getSpritesheetUVs } from "./render";
 import { uuidv7obj } from "uuidv7";
@@ -85,7 +85,7 @@ const moveCardsToDepot = (
   // );
   // modify new depot
   if (lifo) {
-    state.depots[b].cards.push(...state.hand.reverse());
+    state.depots[b].cards.push(...state.hand);
   } else {
     state.depots[b].cards.push(...state.hand);
   }
@@ -292,7 +292,8 @@ const make = async () => {
     const [xScale, yScale] = Depot.getOffsetScale(state.depots[b]);
     const PER_CARD_OFFSET = xScale < yScale ? cardColumnOffset() : 20;
     const depot = state.depots[b];
-    const cards = depot.cards;
+    const cards =
+      depot.type === "row-reverse" ? depot.cards.toReversed() : depot.cards;
     for (let i = cards.length - n; i < cards.length; i++) {
       const offset = i * PER_CARD_OFFSET;
       cards[i].location = depot;
@@ -322,7 +323,13 @@ const make = async () => {
 
     console.log("rank", rank);
     state.rank = rank;
-    Klondike.setState2(state, data);
+    Sawayama.setState2(state, data);
+
+    updateCardLocations(
+      state,
+      KlondikeDepot.Stock,
+      state.depots[KlondikeDepot.Stock].cards.length,
+    );
     for (let i = KlondikeDepot.Tableau1; i <= KlondikeDepot.Tableau7; i++) {
       updateCardLocations(state, i, state.depots[i].cards.length);
     }
@@ -396,6 +403,7 @@ const make = async () => {
     const rad = 0;
 
     for (const depot of props.depots) {
+      if (!depot.visible) continue;
       const { x: x0, y: y0 } = depot.rect;
       const positions: Vec2[] = [
         [x0, y0],
@@ -405,7 +413,7 @@ const make = async () => {
       ];
       const uvs = getSpritesheetUVs({
         texture: spritesheet,
-        col: depot.id === KlondikeDepot.Stock && depot.cards.length > 1 ? 1 : 0,
+        col: depot.type === "pile" && depot.cards.length > 1 ? 1 : 0,
         row: 4,
         p: cardMargin,
         w: cardWidth,
@@ -481,11 +489,12 @@ const make = async () => {
       // const bottomRight = [...Vec2.rotate([x0 + w, y0 + h], origin, rad), 1, 1];
 
       const { col, row } =
-        card.location?.id === KlondikeDepot.Stock &&
-        card.location?.cards.length > 1 &&
-        card.x === card.location.rect.x
-          ? { col: 1, row: 4 }
-          : { col: card.card.rank, row: card.card.suit };
+        // card.location?.type === "pile" &&
+        // card.location?.cards.length > 1 &&
+        // card.x === card.location.rect.x
+        //   ? { col: 1, row: 4 }
+        //   :
+        { col: card.card.rank, row: card.card.suit };
 
       const uvs = getSpritesheetUVs({
         texture: spritesheet,
@@ -507,17 +516,15 @@ const make = async () => {
 
     for (const depot of props.depots) {
       if (depot.id === state.selection.aTop) continue;
-      const cards =
-        depot.id === KlondikeDepot.Stock
-          ? depot.cards.toReversed()
-          : depot.cards;
+      const cards = depot.cards;
+      // depot.type === "row-reverse" ? depot.cards.toReversed() : depot.cards;
       for (const card of cards) {
         getCardSpriteGeometry(card);
       }
     }
 
     const topCards =
-      state.selection.aTop === KlondikeDepot.Stock
+      state.depots[state.selection.aTop].type === "pile"
         ? state.depots[state.selection.aTop].cards.toReversed()
         : state.depots[state.selection.aTop].cards;
     for (const card of topCards) {
@@ -874,6 +881,23 @@ js: ${jsTime.toFixed(1)}ms
       //   // break;
       // }
 
+      if (
+        result.a === KlondikeDepot.Stock &&
+        result.n === 1 &&
+        state.depots[result.a].cards.length > 1
+      ) {
+        const stock = state.depots[result.a];
+        state.selection.a = result.a;
+        state.selection.aTop = result.a;
+        state.selection.n = Math.min(3, stock.cards.length);
+        state.selection.offset = {
+          x: worldPos.x - stock.cards[stock.cards.length - 1].x,
+          y: worldPos.y - stock.cards[stock.cards.length - 1].y,
+        };
+
+        return;
+      }
+
       if (game.isValidStart(state, result.a, result.n)) {
         // Track selection
         state.selection.a = result.a;
@@ -974,8 +998,17 @@ js: ${jsTime.toFixed(1)}ms
     const result = getDestDepot(state.selection.a, state.selection.n, worldPos);
     if (!result) {
       // restored card locations
-      moveCardsToDepot(state, state.selection.a);
-      updateCardLocations(state, state.selection.a, state.selection.n);
+      const lifo = state.depots[state.selection.a].type === "row-reverse";
+      moveCardsToDepot(state, state.selection.a, lifo);
+      if (lifo) {
+        updateCardLocations(
+          state,
+          state.selection.a,
+          state.depots[state.selection.a].cards.length,
+        );
+      } else {
+        updateCardLocations(state, state.selection.a, state.selection.n);
+      }
 
       state.selection.a = undefined;
       state.selection.n = undefined;
@@ -988,8 +1021,21 @@ js: ${jsTime.toFixed(1)}ms
       moveToTop(state, result.a, result.n, true);
     }
 
-    moveCardsToDepot(state, result.b, false);
-    updateCardLocations(state, result.b, result.n);
+    if (state.depots[state.selection.a].type === "row-reverse") {
+      updateCardLocations(
+        state,
+        state.selection.a,
+        state.depots[state.selection.a].cards.length,
+      );
+    }
+
+    const lifo = state.depots[result.b].type === "row-reverse";
+    moveCardsToDepot(state, result.b, lifo);
+    if (lifo) {
+      updateCardLocations(state, result.b, state.depots[result.b].cards.length);
+    } else {
+      updateCardLocations(state, result.b, result.n);
+    }
 
     const automoveCounts = Sawayama.getAutomaticMoves(
       state,
@@ -1125,24 +1171,21 @@ js: ${jsTime.toFixed(1)}ms
             //   stock.cards.length,
             //   true
             // );
-
-            const waste = state.depots[KlondikeDepot.Waste];
-            const [xScale, yScale] = Depot.getOffsetScale(waste);
-
-            state.selection.aTop = KlondikeDepot.Stock;
-
-            for (let i = stock.cards.length - 1; i >= 0; i--) {
-              const offset =
-                (waste.cards.length + stock.cards.length - i - 1) * 20;
-              stock.cards[i] = {
-                ...stock.cards[i],
-                x: waste.rect.x + offset * xScale,
-                y:
-                  waste.rect.y +
-                  offset * yScale -
-                  (i >= stock.cards.length - 3 ? 10 : 20),
-              };
-            }
+            // const waste = state.depots[KlondikeDepot.Waste];
+            // const [xScale, yScale] = Depot.getOffsetScale(waste);
+            // state.selection.aTop = KlondikeDepot.Stock;
+            // for (let i = stock.cards.length - 1; i >= 0; i--) {
+            //   const offset =
+            //     (waste.cards.length + stock.cards.length - i - 1) * 20;
+            //   stock.cards[i] = {
+            //     ...stock.cards[i],
+            //     x: waste.rect.x + offset * xScale,
+            //     y:
+            //       waste.rect.y +
+            //       offset * yScale -
+            //       (i >= stock.cards.length - 3 ? 10 : 20),
+            //   };
+            // }
           }
         }
       }
@@ -1210,14 +1253,16 @@ js: ${jsTime.toFixed(1)}ms
   });
 
   const getDepotIndex = (point: { x: number; y: number }) => {
-    const PER_CARD_OFFSET = cardColumnOffset();
+    const columnOFfset = cardColumnOffset();
     return state.depots.findIndex((depot) => {
+      const cardOffset = depot.type === "column" ? columnOFfset : 20;
+
       const [xScale, yScale] = Depot.getOffsetScale(depot);
 
-      const topOffset = depot.cards.length * PER_CARD_OFFSET;
+      const topOffset = depot.cards.length * cardOffset;
       return Rect.hasPoint(point, {
         ...depot.rect,
-        x: depot.rect.x + 20 * xScale,
+        x: depot.rect.x + topOffset * xScale,
         y: depot.rect.y + topOffset * yScale,
       });
     });
