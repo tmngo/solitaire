@@ -1,39 +1,17 @@
-import { Card } from "./cards";
-
 import * as Mat3 from "./math/mat3";
 import { Vec2 } from "./math/vec2";
 import shaderSource from "./shaders/shader.wgsl?raw";
 import { Vec3 } from "./math/vec3";
-import { CardSprite, Depot, Point2D, Rect } from "./layout";
+import { CardSprite, Depot, Rect } from "./layout";
 import { KlondikeDepot } from "./games/klondike";
 import { Sawayama } from "./games/sawayama";
 import { createTextureFromUrl, getSpritesheetUVs } from "./render";
 import { uuidv7obj } from "uuidv7";
 import spritesheetUrl from "./assets/card-spritesheet.png";
+import { Game, State } from "./game";
 
-type State = {
-  // Tracks absolute order of cards for rendering
-  cards: CardSprite[];
-  // Tracks card locations for game rules
-  depots: Depot[];
-  hand: CardSprite[];
-  selection: {
-    a?: number;
-    n?: number;
-    aTop: number;
-    card?: Card;
-    offset: Point2D;
-    position?: Point2D;
-  };
-  hovered: number;
-  lastMove?: {
-    a: number;
-    b: number;
-    n: number;
-  };
-  hoveredCard: number;
-  rank: string;
-  moves: { a: number; b: number; n: number }[];
+const games: Record<"sa", Game> = {
+  sa: Sawayama,
 };
 
 const state: State = {
@@ -46,7 +24,7 @@ const state: State = {
   rank: "",
   moves: [],
 };
-const game: Game = Sawayama;
+let game: Game = Sawayama;
 
 // Move to top of sort order.
 const moveToTop = (
@@ -95,27 +73,6 @@ const moveCardsToDepot = (
   return state.hand.length;
 };
 
-interface Game {
-  initDepots: (
-    state: State,
-    left: number,
-    top: number,
-    cardWidth: number,
-    cardHeight: number,
-  ) => void;
-  isRestockValid: () => boolean;
-  isStockEmpty: (state: State) => boolean;
-  isValidMove: (state: State, a: number, b: number, n: number) => boolean;
-  isValidStart: (state: State, a: number, n: number) => boolean;
-  score: (state: State) => number;
-  parseMove: (
-    state: State,
-    a: number,
-    b: number,
-    n: number,
-  ) => readonly [boolean, number, number, number];
-}
-
 const getUserID = () => {
   const stored = window.localStorage.getItem("uid");
   if (stored) return stored;
@@ -156,18 +113,18 @@ const make = async () => {
     .querySelector<HTMLButtonElement>("#new-game")
     ?.addEventListener("pointerup", async () => {
       if (state.moves.length > 8) {
-        invokeCheckGame(uid, state.rank, state.moves);
+        invokeCheckGame("sa", uid, state.rank, state.moves);
       }
-      invokeNewGame();
+      invokeNewGame("sa");
     });
 
   document
     .querySelector<HTMLButtonElement>("#reset-game")
     ?.addEventListener("pointerup", async () => {
       if (state.moves.length > 8) {
-        invokeCheckGame(uid, state.rank, state.moves);
+        invokeCheckGame("sa", uid, state.rank, state.moves);
       }
-      invokeNewGame(state.rank);
+      invokeNewGame("sa", state.rank);
     });
 
   // Connect to server
@@ -305,8 +262,9 @@ const make = async () => {
 
   game.initDepots(state, left, top, cardWidth, cardHeight);
 
-  const invokeNewGame = async (id?: string) => {
+  const invokeNewGame = async (gameCode: "sa", id?: string) => {
     const params = new URLSearchParams();
+    params.append("g", gameCode);
     if (id !== undefined) {
       params.append("id", id);
     }
@@ -324,7 +282,8 @@ const make = async () => {
 
     console.log("rank", rank);
     state.rank = rank;
-    Sawayama.setState2(state, data);
+    game = games[gameCode];
+    game.setState2(state, data);
 
     updateCardLocations(
       state,
@@ -337,6 +296,7 @@ const make = async () => {
   };
 
   const invokeCheckGame = async (
+    game: "sa",
     uid: string,
     rank: string,
     moves: { a: number; b: number; n: number }[],
@@ -359,7 +319,7 @@ const make = async () => {
 
       const res = await fetch(url, {
         method: "POST",
-        body: new Blob([btoa(`${uid} ${rank} ${moveData}`)], {
+        body: new Blob([btoa(`${game} ${uid} ${rank} ${moveData}`)], {
           type: "application/octet-stream",
         }),
       });
@@ -383,7 +343,7 @@ const make = async () => {
   // "36359609971579494075828714929049818041973629260136807041935467228254228542212" // difficult
   const initialID =
     "48104809227013641850957354651277120384703431324695249488991002367200845432480";
-  invokeNewGame(initialID);
+  invokeNewGame("sa", initialID);
   // invokeNewGame();
 
   const computeSpriteVertices = (props: {
@@ -1038,13 +998,10 @@ js: ${jsTime.toFixed(1)}ms
       updateCardLocations(state, result.b, result.n);
     }
 
-    const automoveCounts = Sawayama.getAutomaticMoves(
-      state,
-      (state, a, b, n) => {
-        moveToTop(state, a, n, false);
-        moveCardsToDepot(state, b, false);
-      },
-    );
+    const automoveCounts = game.getAutomaticMoves(state, (state, a, b, n) => {
+      moveToTop(state, a, n, false);
+      moveCardsToDepot(state, b, false);
+    });
 
     let hasAutomove = false;
     for (let i = 0; i < automoveCounts.length; i++) {
@@ -1123,7 +1080,7 @@ js: ${jsTime.toFixed(1)}ms
     }
 
     if (state.moves.length > 52) {
-      invokeCheckGame(uid, state.rank, state.moves);
+      invokeCheckGame("sa", uid, state.rank, state.moves);
     }
 
     return { a, b, n };

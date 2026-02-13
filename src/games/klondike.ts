@@ -1,4 +1,5 @@
 import { Card, Suit } from "../cards";
+import { Game, State } from "../game";
 import { CardSprite, Depot, Rect } from "../layout";
 
 export enum KlondikeDepot {
@@ -408,10 +409,13 @@ const score = (state: { depots: Depot[] }) => {
   return result;
 };
 
-export const Klondike = {
+export const Klondike: Game = {
+  getAutomaticMoves: () => [],
   initDepots,
   isValidMove,
   isValidStart,
+  isRestockValid: () => false,
+  isStockEmpty: (state: State) => state.depots[0].cards.length === 0,
   parseMove,
   setState,
   setState2,

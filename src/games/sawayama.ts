@@ -1,4 +1,5 @@
 import { Card } from "../cards";
+import { Game } from "../game";
 import { CardSprite, Depot, Rect } from "../layout";
 import {
   getAlternateSuits,
@@ -272,7 +273,7 @@ const parseMove = (
   return Klondike.parseMove(state, a, b, n);
 };
 
-export const Sawayama = {
+export const Sawayama: Game = {
   ...Klondike,
   parseMove,
   getAutomaticMoves,
