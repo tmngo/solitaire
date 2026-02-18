@@ -13,6 +13,7 @@ export interface SolitaireOptions {
 }
 
 export interface Game {
+  foundations: () => number[];
   getAutomaticMoves: (
     state: { depots: Depot[]; hand: CardSprite[] },
     moveCards: (
@@ -33,6 +34,8 @@ export interface Game {
   isStockEmpty: (state: State) => boolean;
   isValidMove: (state: State, a: number, b: number, n: number) => boolean;
   isValidStart: (state: State, a: number, n: number) => boolean;
+  layoutHeight: () => number;
+  layoutWidth: () => number;
   score: (state: State) => number;
   parseMove: (
     state: { depots: Depot[] },
@@ -41,15 +44,6 @@ export interface Game {
     n: number,
   ) => readonly [boolean, number, number, number];
   setState: (
-    state: {
-      cards: CardSprite[];
-      depots: Depot[];
-      lastMove?: { a: number; b: number; n: number };
-      moves: { a: number; b: number; n: number }[];
-    },
-    data: string,
-  ) => void;
-  setState2: (
     state: {
       cards: CardSprite[];
       depots: Depot[];

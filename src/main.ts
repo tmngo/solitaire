@@ -9,9 +9,22 @@ import { createTextureFromUrl, getSpritesheetUVs } from "./render";
 import { uuidv7obj } from "uuidv7";
 import spritesheetUrl from "./assets/card-spritesheet.png";
 import { Game, State } from "./game";
+import { FreeCell } from "./games/freecell";
 
-const games: Record<"sa", Game> = {
+type GameCode = "fc" | "sa";
+
+const games: Record<GameCode, Game> = {
   sa: Sawayama,
+  fc: FreeCell,
+};
+
+const testIDs: Record<GameCode, string[]> = {
+  sa: [
+    "48104809227013641850957354651277120384703431324695249488991002367200845432480",
+  ],
+  fc: [
+    "43256203036895422154045006583307961065836537730185175986996931348755583443611",
+  ],
 };
 
 const state: State = {
@@ -24,10 +37,13 @@ const state: State = {
   rank: "",
   moves: [],
 };
-let game: Game = Sawayama;
+
+let gameCode: GameCode = "fc";
+let selectedGameCode: GameCode = gameCode;
+let game: Game = games[gameCode];
 
 // Move to top of sort order.
-const moveToTop = (
+const moveToHand = (
   state: { depots: Depot[]; hand: CardSprite[] },
   a: number,
   n: number,
@@ -37,13 +53,6 @@ const moveToTop = (
     state.depots[a].cards.length - n,
   );
 
-  // Move any cards on top of this card too
-  // const spliceIndex = findCardIndex(card.location.cards, card);
-  // for (let j = spliceIndex + 1; j < card.location.cards.length; j++) {
-  //   const cardIndex = findCardIndex(state.cards, card.location.cards[j]);
-  //   deleted.push(...state.cards.splice(cardIndex, 1));
-  // }
-
   if (lifo) {
     state.hand.push(...deleted.reverse());
   } else {
@@ -52,21 +61,12 @@ const moveToTop = (
   return deleted.length;
 };
 
-const moveCardsToDepot = (
+const moveHandToDepot = (
   state: { depots: Depot[]; hand: CardSprite[] },
   b: number,
-  lifo = false,
 ) => {
-  // remove cards from depot
-  // const removed = state.depots[a].cards.splice(
-  //   state.depots[a].cards.length - n
-  // );
   // modify new depot
-  if (lifo) {
-    state.depots[b].cards.push(...state.hand);
-  } else {
-    state.depots[b].cards.push(...state.hand);
-  }
+  state.depots[b].cards.push(...state.hand);
 
   state.hand = [];
 
@@ -100,12 +100,20 @@ const make = async () => {
   const selectEl = document.querySelector<HTMLSelectElement>("#select");
   if (selectEl) {
     selectEl.innerHTML = `
-        <option value="klondike">Klondike</option>
-        <option value="sawayama">Sawayama</option>
-        <option value="freecell">FreeCell</option>
+        <option value="sa">Sawayama</option>
+        <option value="fc" selected>FreeCell</option>
       `;
     selectEl.onchange = () => {
-      console.log("selectEl", selectEl.value);
+      switch (selectEl.value) {
+        case "fc":
+          selectedGameCode = "fc";
+          break;
+        case "sa":
+          selectedGameCode = "sa";
+          break;
+        default:
+          selectedGameCode = "sa";
+      }
     };
   }
 
@@ -113,18 +121,20 @@ const make = async () => {
     .querySelector<HTMLButtonElement>("#new-game")
     ?.addEventListener("pointerup", async () => {
       if (state.moves.length > 8) {
-        invokeCheckGame("sa", uid, state.rank, state.moves);
+        invokeCheckGame(gameCode, uid, state.rank, state.moves);
       }
-      invokeNewGame("sa");
+      invokeNewGame(selectedGameCode, testIDs[selectedGameCode][1]);
+      gameCode = selectedGameCode;
     });
 
   document
     .querySelector<HTMLButtonElement>("#reset-game")
     ?.addEventListener("pointerup", async () => {
       if (state.moves.length > 8) {
-        invokeCheckGame("sa", uid, state.rank, state.moves);
+        invokeCheckGame(gameCode, uid, state.rank, state.moves);
       }
-      invokeNewGame("sa", state.rank);
+      invokeNewGame(selectedGameCode, state.rank);
+      gameCode = selectedGameCode;
     });
 
   // Connect to server
@@ -230,14 +240,11 @@ const make = async () => {
   const top = 35;
   const cardHeight = 78;
   const cardWidth = 59;
-  const marginX = 11;
   const cardMargin = 2;
-  const layoutWidth = (cardWidth + marginX) * 7 - marginX + 2 * left;
-  const layoutHeight = 435 + 100; // 435
 
   const cardColumnOffset = () => {
-    const widthFitScale = layoutWidth / canvas.width;
-    const heightFitScale = layoutHeight / canvas.height;
+    const widthFitScale = game.layoutWidth() / canvas.width;
+    const heightFitScale = game.layoutHeight() / canvas.height;
     const ratio = widthFitScale / heightFitScale;
 
     const isWider = heightFitScale > widthFitScale;
@@ -262,7 +269,7 @@ const make = async () => {
 
   game.initDepots(state, left, top, cardWidth, cardHeight);
 
-  const invokeNewGame = async (gameCode: "sa", id?: string) => {
+  const invokeNewGame = async (gameCode: GameCode, id?: string) => {
     const params = new URLSearchParams();
     params.append("g", gameCode);
     if (id !== undefined) {
@@ -277,26 +284,30 @@ const make = async () => {
         ? "http://localhost:9000/lambda-url/new_game"
         : "https://72cgjbyjm27zyb7c3luk2aue540fzyjl.lambda-url.us-east-2.on.aws/";
     const res = await fetch(`${url}?${params}`);
+    if (!res.ok) {
+      let text = await res.text();
+      console.log("failed to start new game: ", text);
+      return;
+    }
+
     const encoded = await res.text();
     const [rank, ...data] = atob(encoded).split(" ");
 
     console.log("rank", rank);
     state.rank = rank;
     game = games[gameCode];
-    game.setState2(state, data);
+    game.initDepots(state, left, top, cardWidth, cardHeight);
+    game.setState(state, data);
 
-    updateCardLocations(
-      state,
-      KlondikeDepot.Stock,
-      state.depots[KlondikeDepot.Stock].cards.length,
-    );
-    for (let i = KlondikeDepot.Tableau1; i <= KlondikeDepot.Tableau7; i++) {
-      updateCardLocations(state, i, state.depots[i].cards.length);
+    for (let i = 0; i < state.depots.length; i++) {
+      if (state.depots[i].cards.length > 0) {
+        updateCardLocations(state, i, state.depots[i].cards.length);
+      }
     }
   };
 
   const invokeCheckGame = async (
-    game: "sa",
+    game: GameCode,
     uid: string,
     rank: string,
     moves: { a: number; b: number; n: number }[],
@@ -330,7 +341,7 @@ const make = async () => {
       const decoded = atob(encoded);
       console.log(decoded);
       const [_, score, win] = decoded.split(" ");
-      console.log("score", rank, moveData, score, win);
+      console.log("check:", rank, moveData, score, win);
     } catch (err) {
       console.error(err);
     }
@@ -341,9 +352,8 @@ const make = async () => {
   // "56552200524762784493099217782117928326209965438304936830629295931667953104608" // automove aces on deal/move
   // "55023973064490644078874601710662707669244973291442955263204826534069555882498" // automove initial ace
   // "36359609971579494075828714929049818041973629260136807041935467228254228542212" // difficult
-  const initialID =
-    "48104809227013641850957354651277120384703431324695249488991002367200845432480";
-  invokeNewGame("sa", initialID);
+  const initialID = testIDs[gameCode][1];
+  invokeNewGame(gameCode, initialID);
   // invokeNewGame();
 
   const computeSpriteVertices = (props: {
@@ -650,6 +660,9 @@ const make = async () => {
 
     const startTime = performance.now();
 
+    const layoutHeight = game.layoutHeight();
+    const layoutWidth = game.layoutWidth();
+
     const widthFitScale = layoutWidth / canvas.width;
     const heightFitScale = layoutHeight / canvas.height;
 
@@ -750,7 +763,7 @@ js: ${jsTime.toFixed(1)}ms
 
         canvas.width = newWidth;
         canvas.height = newHeight;
-        for (let i = KlondikeDepot.Tableau1; i <= KlondikeDepot.Tableau7; i++) {
+        for (let i = 0; i < state.depots.length; i++) {
           updateCardLocations(state, i, state.depots[i].cards.length);
         }
 
@@ -771,6 +784,9 @@ js: ${jsTime.toFixed(1)}ms
   requestID = window.requestAnimationFrame(renderFrame);
 
   const getMouseWorldPosition = (e: PointerEvent) => {
+    const layoutHeight = game.layoutHeight();
+    const layoutWidth = game.layoutWidth();
+
     const widthFitScale = layoutWidth / canvas.width;
     const heightFitScale = layoutHeight / canvas.height;
     const fitScale = Math.max(widthFitScale, heightFitScale); // multiply by fitScale to get from canvas coords to world coords
@@ -791,62 +807,19 @@ js: ${jsTime.toFixed(1)}ms
       closeSidebar();
       return;
     }
-    if (state.selection.a !== undefined) return;
-    // const posScreenSpace = {
-    //   x: e.offsetX / canvas.width,
-    //   y: e.offsetY / canvas.height,
-    // };
-    // Search from the top down.
 
-    // const cardIndex = state.cards.findLastIndex((card) =>
-    //   Rect.hasPoint(
-    //     {
-    //       x: e.offsetX,
-    //       y: e.offsetY,
-    //     },
-    //     Rect.from(card.x, card.y, cardWidth * s, cardHeight * s)
-    //   )
-    // );
+    if (state.selection.a !== undefined) return;
 
     const worldPos = getMouseWorldPosition(e);
-
     const result = getAtPointer(state, worldPos.x, worldPos.y);
 
     if (result !== undefined) {
-      // const card = state.cards[cardIndex];
-      // console.log("pointerdown", card);
-      // if (result.a === KlondikeDepot.Stock) {
-      //   const index = findCardIndex(
-      //     state.cards,
-      //     card.location.cards[Math.max(card.location.cards.length - 3, 0)]
-      //   );
-      //   const movedCount = moveToTop(state, index, false);
-
-      //   state.selection.a = card.location.id;
-      //   state.selection.n = Math.min(3, card.location.cards.length);
-      //   state.selection.cardIndex = state.cards.length - movedCount;
-      //   state.selection.offset = {
-      //     x: e.offsetX - card.x,
-      //     y: e.offsetY - card.y,
-      //   };
-
-      //   return;
-
-      //   // if (
-      //   //   Card.compareCards(
-      //   //     card.card,
-      //   //     card.location.cards[card.location.cards.length - 1].card
-      //   //   ) === 0
-      //   // ) {
-      //   // }
-      //   // break;
-      // }
-
       if (
         result.a === KlondikeDepot.Stock &&
         result.n === 1 &&
         state.depots[result.a].cards.length > 1
       ) {
+        // convert single move from stock to multiple move from stock
         const stock = state.depots[result.a];
         state.selection.a = result.a;
         state.selection.aTop = result.a;
@@ -871,31 +844,8 @@ js: ${jsTime.toFixed(1)}ms
         };
         document.body.style.cursor = "grabbing";
 
-        moveToTop(state, result.a, result.n);
+        moveToHand(state, result.a, result.n);
       }
-
-      return;
-    }
-
-    const dstIndex = getDepotIndex(worldPos);
-    if (
-      dstIndex === KlondikeDepot.Stock &&
-      state.depots[dstIndex].cards.length > 1
-    ) {
-      const stock = state.depots[dstIndex];
-      // const index = findCardIndex(
-      //   state.cards,
-      //   stock.cards[Math.max(stock.cards.length - 3, 0)]
-      // );
-      // const movedCount = moveToTop(state, dstIndex, stock.cards.length, false);
-      // state.selection.cardIndex = state.cards.length - movedCount;
-      state.selection.a = dstIndex;
-      state.selection.aTop = dstIndex;
-      state.selection.n = Math.min(3, stock.cards.length);
-      state.selection.offset = {
-        x: worldPos.x - stock.rect.x,
-        y: worldPos.y - stock.rect.y,
-      };
 
       return;
     }
@@ -959,17 +909,12 @@ js: ${jsTime.toFixed(1)}ms
     const result = getDestDepot(state.selection.a, state.selection.n, worldPos);
     if (!result) {
       // restored card locations
+      moveHandToDepot(state, state.selection.a);
       const lifo = state.depots[state.selection.a].type === "row-reverse";
-      moveCardsToDepot(state, state.selection.a, lifo);
-      if (lifo) {
-        updateCardLocations(
-          state,
-          state.selection.a,
-          state.depots[state.selection.a].cards.length,
-        );
-      } else {
-        updateCardLocations(state, state.selection.a, state.selection.n);
-      }
+      const n = lifo
+        ? state.depots[state.selection.a].cards.length
+        : state.selection.n;
+      updateCardLocations(state, state.selection.a, n);
 
       state.selection.a = undefined;
       state.selection.n = undefined;
@@ -979,9 +924,11 @@ js: ${jsTime.toFixed(1)}ms
     }
 
     if (state.hand.length === 0) {
-      moveToTop(state, result.a, result.n, true);
+      // no existing move to hand, e.g. stock draw
+      moveToHand(state, result.a, result.n, false);
     }
 
+    // update src location
     if (state.depots[state.selection.a].type === "row-reverse") {
       updateCardLocations(
         state,
@@ -990,31 +937,29 @@ js: ${jsTime.toFixed(1)}ms
       );
     }
 
+    // update dst location
+    moveHandToDepot(state, result.b);
     const lifo = state.depots[result.b].type === "row-reverse";
-    moveCardsToDepot(state, result.b, lifo);
-    if (lifo) {
-      updateCardLocations(state, result.b, state.depots[result.b].cards.length);
-    } else {
-      updateCardLocations(state, result.b, result.n);
-    }
+    const n = lifo ? state.depots[result.b].cards.length : result.n;
+    updateCardLocations(state, result.b, n);
 
+    // make automoves
     const automoveCounts = game.getAutomaticMoves(state, (state, a, b, n) => {
-      moveToTop(state, a, n, false);
-      moveCardsToDepot(state, b, false);
+      moveToHand(state, a, n, false);
+      moveHandToDepot(state, b);
     });
 
+    // update automove dsts
+    const foundations = game.foundations();
     let hasAutomove = false;
     for (let i = 0; i < automoveCounts.length; i++) {
       if (automoveCounts[i] > 0) {
-        updateCardLocations(
-          state,
-          KlondikeDepot.Foundation1 + i,
-          automoveCounts[i],
-        );
+        updateCardLocations(state, foundations[i], automoveCounts[i]);
         hasAutomove = true;
       }
     }
 
+    // update automove srcs
     if (hasAutomove && state.selection.a === KlondikeDepot.Stock) {
       updateCardLocations(
         state,
@@ -1055,32 +1000,8 @@ js: ${jsTime.toFixed(1)}ms
     state.lastMove = { a, b, n };
     state.moves.push({ a, b, n });
 
-    if (game.score(state) === 52) {
-      const stats = window.localStorage.getItem("stats");
-      if (stats) {
-        const parsed = JSON.parse(stats);
-        window.localStorage.setItem(
-          "stats",
-          JSON.stringify({
-            sawayama: {
-              wins: (parsed.sawayama.wins ?? 0) + 1,
-            },
-          }),
-        );
-      } else {
-        window.localStorage.setItem(
-          "stats",
-          JSON.stringify({
-            sawayama: {
-              wins: 1,
-            },
-          }),
-        );
-      }
-    }
-
     if (state.moves.length > 52) {
-      invokeCheckGame("sa", uid, state.rank, state.moves);
+      invokeCheckGame(gameCode, uid, state.rank, state.moves);
     }
 
     return { a, b, n };
@@ -1104,7 +1025,7 @@ js: ${jsTime.toFixed(1)}ms
     // }
     // }
     if (state.selection.a !== undefined && state.selection.n !== undefined) {
-      moveCardsToDepot(state, state.selection.a);
+      moveHandToDepot(state, state.selection.a);
       updateCardLocations(state, state.selection.a, state.selection.n);
     }
     state.selection.a = undefined;

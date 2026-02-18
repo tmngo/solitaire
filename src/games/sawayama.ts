@@ -23,6 +23,7 @@ const initDepots = (
   cardWidth: number,
   cardHeight: number,
 ) => {
+  state.depots = [];
   state.depots.push(
     // Stock
     {
@@ -267,10 +268,22 @@ const parseMove = (
   b: number,
   n: number,
 ) => {
-  if (a === KlondikeDepot.Stock && a === b && isStockEmpty(state)) {
-    return [false, a, b, n] as const;
+  const depotA = state.depots[a];
+  if (
+    a === KlondikeDepot.Stock &&
+    b === KlondikeDepot.Stock &&
+    n === 3 &&
+    depotA.cards.length > 1
+  ) {
+    return [
+      true,
+      a,
+      KlondikeDepot.Waste,
+      Math.min(depotA.cards.length, 3),
+    ] as const;
   }
-  return Klondike.parseMove(state, a, b, n);
+
+  return [true, a, b, n] as const;
 };
 
 export const Sawayama: Game = {

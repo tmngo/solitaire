@@ -52,7 +52,7 @@ export type CardSprite = {
   visible?: boolean;
 };
 
-type DepotType = "column" | "pile" | "row" | "row-reverse";
+type DepotType = "column" | "pile" | "row" | "row-reverse" | "cell";
 // depot    position in the layout comprising a pile
 // column   vertical spread line of cards
 // row      horizontal spread line of cards

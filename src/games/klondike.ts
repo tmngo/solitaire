@@ -47,6 +47,7 @@ const initDepots = (
   cardWidth: number,
   cardHeight: number,
 ) => {
+  state.depots = [];
   state.depots.push(
     // Stock
     {
@@ -106,7 +107,6 @@ const isValidDraw = (state: { depots: Depot[] }, a: number, n: number) => {
     return false;
   }
   if (a >= KlondikeDepot.Tableau1 && a <= KlondikeDepot.Tableau7) {
-    console.log(depotA.cards.length);
     return isAlternating(depotA.cards.slice(depotA.cards.length - n));
   }
   return false;
@@ -130,7 +130,6 @@ const isValidStart = (state: { depots: Depot[] }, a: number, n: number) => {
     return false;
   }
   if (a >= KlondikeDepot.Tableau1 && a <= KlondikeDepot.Tableau7) {
-    console.log(depotA.cards.length);
     return isAlternating(depotA.cards.slice(depotA.cards.length - n));
   }
   return false;
@@ -228,108 +227,6 @@ const setState = (
     lastMove?: { a: number; b: number; n: number };
     moves: { a: number; b: number; n: number }[];
   },
-  data: string,
-) => {
-  const split = data
-    .substring(5)
-    .split(" ")
-    .map((x) => {
-      const binaryString = atob(x);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      return bytes;
-    });
-  state.cards = [];
-  state.moves = [];
-  console.log(split);
-  console.log(state.lastMove);
-
-  for (let i = 0; i < split.length; i++) {
-    const hiddenCount = split[i][0];
-    state.depots[i].cards = [];
-    const [xScale, yScale] = Depot.getOffsetScale(state.depots[i]);
-    for (let j = 0; j < hiddenCount; j++) {
-      const offset = state.depots[i].cards.length * 20;
-      const x = state.depots[i].rect.x + xScale * offset;
-      const y = state.depots[i].rect.y + yScale * offset;
-      const card = {
-        currentX: x,
-        currentY: y,
-        x,
-        y,
-        vx: 0,
-        vy: 0,
-        card: Card.from(Suit.Unknown, 2),
-        location: state.depots[i],
-      };
-      state.depots[i].cards.push(card);
-      state.cards.push(card);
-    }
-    for (let k = 1; k < split[i].length; k++) {
-      const cardValue = split[i][k];
-      const suit = Math.floor(split[i][k] / 13);
-      const rank = Math.floor(cardValue % 13);
-      if (Card.isRank(rank)) {
-        const offset = state.depots[i].cards.length * 20;
-        const x = state.depots[i].rect.x + xScale * offset;
-        const y = state.depots[i].rect.y + yScale * offset;
-        // Animate from stock if drawn
-        const currentX =
-          i === KlondikeDepot.Waste &&
-          state.lastMove?.b === KlondikeDepot.Waste &&
-          k >= split[i].length - (state.lastMove?.n ?? 0)
-            ? state.depots[KlondikeDepot.Stock].rect.x
-            : x;
-        const currentY =
-          i === KlondikeDepot.Waste &&
-          state.lastMove?.b === KlondikeDepot.Waste &&
-          k >= split[i].length - (state.lastMove?.n ?? 0)
-            ? state.depots[KlondikeDepot.Stock].rect.y
-            : y;
-        const card = {
-          currentX,
-          currentY,
-          x,
-          y,
-          vx: 0,
-          vy: 0,
-          card: Card.from(suit, rank),
-          location: state.depots[i],
-        };
-        state.depots[i].cards.push(card);
-        state.cards.push(card);
-      }
-    }
-  }
-  // const hiddenCount = split[0][0];
-  // state.depots[0].cards = [];
-  // const [xScale, yScale] = Depot.getOffsetScale(state.depots[0]);
-  // for (let j = 0; j < hiddenCount; j++) {
-  //   const offset = state.depots[0].cards.length * 20;
-  //   const x = state.depots[0].rect.x + xScale * offset;
-  //   const y = state.depots[0].rect.y + yScale * offset;
-  //   const card = {
-  //     currentX: x,
-  //     currentY: y,
-  //     x,
-  //     y,
-  //     card: Card.from(Suit.Unknown, 2),
-  //     location: state.depots[0],
-  //   };
-  //   state.depots[0].cards.push(card);
-  //   state.cards.push(card);
-  // }
-};
-
-const setState2 = (
-  state: {
-    cards: CardSprite[];
-    depots: Depot[];
-    lastMove?: { a: number; b: number; n: number };
-    moves: { a: number; b: number; n: number }[];
-  },
   data: string[],
 ) => {
   const split = data.map((x) => {
@@ -409,15 +306,26 @@ const score = (state: { depots: Depot[] }) => {
   return result;
 };
 
+const left = 15;
+const cardWidth = 59;
+const marginX = 11;
+
 export const Klondike: Game = {
+  foundations: () => [
+    KlondikeDepot.Foundation1,
+    KlondikeDepot.Foundation2,
+    KlondikeDepot.Foundation3,
+    KlondikeDepot.Foundation4,
+  ],
   getAutomaticMoves: () => [],
   initDepots,
   isValidMove,
   isValidStart,
   isRestockValid: () => false,
   isStockEmpty: (state: State) => state.depots[0].cards.length === 0,
+  layoutWidth: () => (cardWidth + marginX) * 7 - marginX + 2 * left,
+  layoutHeight: () => 435 + 100,
   parseMove,
   setState,
-  setState2,
   score,
 };
