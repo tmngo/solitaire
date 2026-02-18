@@ -93,6 +93,7 @@ canvas {
 }
 
 #sidebar {
+  color: #fffe;
   display: flex;
   z-index: 1;
   flex-direction: column;
@@ -182,6 +183,18 @@ option {
   padding-bottom: 0.125em;
   align-items: center;
   justify-content: center;
+}
+
+#stats {
+  font-size: 0.75em;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+}
+
+.num {
+  justify-self: end;
 }
 
 .message {

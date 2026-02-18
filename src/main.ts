@@ -18,6 +18,44 @@ const games: Record<GameCode, Game> = {
   fc: FreeCell,
 };
 
+type Stats = Record<
+  GameCode,
+  {
+    games: number;
+    wins: number;
+  }
+>;
+
+let lastSeenRank: string | undefined = undefined;
+
+const getStats = (): Stats => {
+  const raw = window.localStorage.getItem("stats");
+  if (raw) return JSON.parse(raw);
+
+  return {
+    fc: { games: 0, wins: 0 },
+    sa: { games: 0, wins: 0 },
+  };
+};
+
+const setStats = (value: Stats) => {
+  window.localStorage.setItem("stats", JSON.stringify(value));
+};
+
+const renderStats = (stats: { games: number; wins: number }) => {
+  const gamesEl = document.querySelector<HTMLSelectElement>("#stats-g");
+  const winsEl = document.querySelector<HTMLSelectElement>("#stats-w");
+  const winrateEl = document.querySelector<HTMLSelectElement>("#stats-r");
+  if (gamesEl && winsEl && winrateEl) {
+    gamesEl.innerText = stats.games.toFixed(0);
+    winsEl.innerText = stats.wins.toFixed(0);
+    winrateEl.innerText =
+      stats.games === 0
+        ? "-"
+        : ((100 * stats.wins) / stats.games).toFixed(0) + "%";
+  }
+};
+
 const testIDs: Record<GameCode, string[]> = {
   sa: [
     "48104809227013641850957354651277120384703431324695249488991002367200845432480",
@@ -94,6 +132,11 @@ const make = async () => {
     <select id="select"></select>
     <button id="new-game">New</button>
     <button id="reset-game">Reset</button>
+    <div id="stats">
+      <div>Games</div><div id="stats-g" class="num">0</div>
+      <div>Wins</div><div id="stats-w" class="num">0</div>
+      <div>Winrate</div><div id="stats-r" class="num">-</div>
+    </div>
     `;
   }
 
@@ -114,6 +157,7 @@ const make = async () => {
         default:
           selectedGameCode = "sa";
       }
+      renderStats(getStats()[selectedGameCode]);
     };
   }
 
@@ -125,6 +169,8 @@ const make = async () => {
       }
       invokeNewGame(selectedGameCode, testIDs[selectedGameCode][1]);
       gameCode = selectedGameCode;
+
+      lastSeenRank = state.rank;
     });
 
   document
@@ -135,6 +181,7 @@ const make = async () => {
       }
       invokeNewGame(selectedGameCode, state.rank);
       gameCode = selectedGameCode;
+      lastSeenRank = state.rank;
     });
 
   // Connect to server
@@ -304,6 +351,8 @@ const make = async () => {
         updateCardLocations(state, i, state.depots[i].cards.length);
       }
     }
+
+    renderStats(getStats()[gameCode]);
   };
 
   const invokeCheckGame = async (
@@ -968,6 +1017,16 @@ js: ${jsTime.toFixed(1)}ms
       );
     }
 
+    if (state.rank !== lastSeenRank) {
+      const stats = getStats();
+
+      if (game.isWin(state)) {
+        stats[gameCode].wins += 1;
+        setStats(stats);
+        renderStats(stats[gameCode]);
+      }
+    }
+
     state.selection.a = undefined;
     state.selection.n = undefined;
     document.body.style.cursor = "auto";
@@ -999,6 +1058,16 @@ js: ${jsTime.toFixed(1)}ms
 
     state.lastMove = { a, b, n };
     state.moves.push({ a, b, n });
+
+    if (state.rank !== lastSeenRank) {
+      const stats = getStats();
+
+      if (state.moves.length === 1) {
+        stats[gameCode].games += 1;
+        setStats(stats);
+        renderStats(stats[gameCode]);
+      }
+    }
 
     if (state.moves.length > 52) {
       invokeCheckGame(gameCode, uid, state.rank, state.moves);
