@@ -323,6 +323,10 @@ export const Klondike: Game = {
   isValidStart,
   isRestockValid: () => false,
   isStockEmpty: (state: State) => state.depots[0].cards.length === 0,
+  isWin: (state: State) =>
+    state.depots
+      .slice(KlondikeDepot.Foundation1, KlondikeDepot.Foundation4 + 1)
+      .every((x) => x.cards.length === 13),
   layoutWidth: () => (cardWidth + marginX) * 7 - marginX + 2 * left,
   layoutHeight: () => 435 + 100,
   parseMove,

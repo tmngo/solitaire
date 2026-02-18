@@ -34,6 +34,7 @@ export interface Game {
   isStockEmpty: (state: State) => boolean;
   isValidMove: (state: State, a: number, b: number, n: number) => boolean;
   isValidStart: (state: State, a: number, n: number) => boolean;
+  isWin: (state: State) => boolean;
   layoutHeight: () => number;
   layoutWidth: () => number;
   score: (state: State) => number;

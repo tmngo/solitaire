@@ -291,6 +291,11 @@ export const FreeCell: Game = {
     );
   },
 
+  isWin: (state: State) =>
+    state.depots
+      .slice(FreeCellDepot.Foundation1, FreeCellDepot.Foundation4 + 1)
+      .every((x) => x.cards.length === 13),
+
   layoutWidth: () => (cardWidth + marginX) * 8 - marginX + 2 * left,
   layoutHeight: () => 535,
 
