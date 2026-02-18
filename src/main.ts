@@ -163,7 +163,11 @@ const make = async () => {
 
   document
     .querySelector<HTMLButtonElement>("#new-game")
-    ?.addEventListener("pointerup", async () => {
+    ?.addEventListener("pointerup", async (event) => {
+      if (!(event.target instanceof HTMLButtonElement)) return;
+
+      if (event.target.disabled) return;
+
       if (state.moves.length > 8) {
         invokeCheckGame(gameCode, uid, state.rank, state.moves);
       }
@@ -171,17 +175,35 @@ const make = async () => {
       gameCode = selectedGameCode;
 
       lastSeenRank = state.rank;
+
+      event.target.disabled = true;
+      setTimeout(() => {
+        if (event.target instanceof HTMLButtonElement) {
+          event.target.disabled = false;
+        }
+      }, 1000);
     });
 
   document
     .querySelector<HTMLButtonElement>("#reset-game")
-    ?.addEventListener("pointerup", async () => {
+    ?.addEventListener("pointerup", async (event) => {
+      if (!(event.target instanceof HTMLButtonElement)) return;
+
+      if (event.target.disabled) return;
+
       if (state.moves.length > 8) {
         invokeCheckGame(gameCode, uid, state.rank, state.moves);
       }
       invokeNewGame(selectedGameCode, state.rank);
       gameCode = selectedGameCode;
       lastSeenRank = state.rank;
+
+      event.target.disabled = true;
+      setTimeout(() => {
+        if (event.target instanceof HTMLButtonElement) {
+          event.target.disabled = false;
+        }
+      }, 1000);
     });
 
   // Connect to server
