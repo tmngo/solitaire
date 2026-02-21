@@ -366,7 +366,7 @@ const make = async () => {
 
     const url =
       import.meta.env.MODE === "development"
-        ? "http://localhost:9000/lambda-url/new_game"
+        ? "http://192.168.1.35:9000/lambda-url/new_game"
         : "https://72cgjbyjm27zyb7c3luk2aue540fzyjl.lambda-url.us-east-2.on.aws/";
     const res = await fetch(`${url}?${params}`);
     if (!res.ok) {
@@ -412,7 +412,8 @@ const make = async () => {
 
       const url =
         import.meta.env.MODE === "development"
-          ? "http://localhost:9000/lambda-url/check_game"
+          ? // ? "http://localhost:9000/lambda-url/check_game"
+            "http://192.168.1.35:9000/lambda-url/check_game"
           : `https://l43lgrwkv67ifusmm75o3ikgx40zwzdr.lambda-url.us-east-2.on.aws/`;
 
       const res = await fetch(url, {
@@ -1063,14 +1064,14 @@ js: ${jsTime.toFixed(1)}ms
       );
     }
 
-    if (state.rank !== lastSeenRank) {
-      if (game.isWin(state)) {
+    if (game.isWin(state)) {
+      if (state.rank !== lastSeenRank) {
         const stats = getStats();
         stats[gameCode].wins += 1;
         setStats(stats);
         renderStats(stats[gameCode]);
-        invokeCheckGame(gameCode, uid, state.rank, state.moves);
       }
+      invokeCheckGame(gameCode, uid, state.rank, state.moves);
     }
 
     state.selection.a = undefined;
@@ -1127,7 +1128,8 @@ js: ${jsTime.toFixed(1)}ms
 
     const url =
       import.meta.env.MODE === "development"
-        ? "http://localhost:9000/lambda-url/check_game"
+        ? // ? "http://localhost:9000/lambda-url/check_game"
+          "http://192.168.1.35:9000/lambda-url/check_game"
         : `https://l43lgrwkv67ifusmm75o3ikgx40zwzdr.lambda-url.us-east-2.on.aws/`;
     const moveData = state.moves.reduce(
       (acc, { a, b, n }) =>
