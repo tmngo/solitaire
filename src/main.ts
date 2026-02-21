@@ -77,7 +77,9 @@ const state: State = {
   moves: [],
 };
 
-let gameCode: GameCode = "fc";
+let storedGameCode = window.localStorage.getItem("code");
+let gameCode: GameCode =
+  storedGameCode === "fc" || storedGameCode === "sa" ? storedGameCode : "sa";
 let selectedGameCode: GameCode = gameCode;
 let game: Game = games[gameCode];
 
@@ -145,8 +147,18 @@ const make = async () => {
   if (selectEl) {
     selectEl.innerHTML = `
         <option value="sa">Sawayama</option>
-        <option value="fc" selected>FreeCell</option>
+        <option value="fc">FreeCell</option>
       `;
+    for (let i = 0; i < selectEl.childElementCount; i++) {
+      const child = selectEl.children.item(i);
+      if (
+        child instanceof HTMLOptionElement &&
+        child.value === selectedGameCode
+      ) {
+        child.selected = true;
+      }
+    }
+
     selectEl.onchange = () => {
       switch (selectEl.value) {
         case "fc":
@@ -175,6 +187,7 @@ const make = async () => {
 
       invokeNewGame(selectedGameCode, testIDs[selectedGameCode][1]);
       gameCode = selectedGameCode;
+      window.localStorage.setItem("code", selectedGameCode);
 
       lastSeenRank = state.rank;
 
