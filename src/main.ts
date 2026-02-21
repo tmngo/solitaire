@@ -23,6 +23,7 @@ type Stats = Record<
   {
     games: number;
     wins: number;
+    lastDate: string;
   }
 >;
 
@@ -33,8 +34,8 @@ const getStats = (): Stats => {
   if (raw) return JSON.parse(raw);
 
   return {
-    fc: { games: 0, wins: 0 },
-    sa: { games: 0, wins: 0 },
+    fc: { games: 0, wins: 0, lastDate: "" },
+    sa: { games: 0, wins: 0, lastDate: "" },
   };
 };
 
@@ -168,9 +169,10 @@ const make = async () => {
 
       if (event.target.disabled) return;
 
-      if (state.moves.length > 8) {
+      if (!game.isWin(state) && state.moves.length > 8) {
         invokeCheckGame(gameCode, uid, state.rank, state.moves);
       }
+
       invokeNewGame(selectedGameCode, testIDs[selectedGameCode][1]);
       gameCode = selectedGameCode;
 
@@ -191,9 +193,10 @@ const make = async () => {
 
       if (event.target.disabled) return;
 
-      if (state.moves.length > 8) {
+      if (!game.isWin(state) && state.moves.length > 8) {
         invokeCheckGame(gameCode, uid, state.rank, state.moves);
       }
+
       invokeNewGame(selectedGameCode, state.rank);
       gameCode = selectedGameCode;
       lastSeenRank = state.rank;
@@ -378,7 +381,7 @@ const make = async () => {
   };
 
   const invokeCheckGame = async (
-    game: GameCode,
+    gameCode: GameCode,
     uid: string,
     rank: string,
     moves: { a: number; b: number; n: number }[],
@@ -401,7 +404,7 @@ const make = async () => {
 
       const res = await fetch(url, {
         method: "POST",
-        body: new Blob([btoa(`${game} ${uid} ${rank} ${moveData}`)], {
+        body: new Blob([btoa(`${gameCode} ${uid} ${rank} ${moveData}`)], {
           type: "application/octet-stream",
         }),
       });
@@ -423,9 +426,16 @@ const make = async () => {
   // "56552200524762784493099217782117928326209965438304936830629295931667953104608" // automove aces on deal/move
   // "55023973064490644078874601710662707669244973291442955263204826534069555882498" // automove initial ace
   // "36359609971579494075828714929049818041973629260136807041935467228254228542212" // difficult
-  const initialID = testIDs[gameCode][1];
-  invokeNewGame(gameCode, initialID);
-  // invokeNewGame();
+
+  const now = new Date();
+  if (getStats()[gameCode].lastDate !== now.toDateString()) {
+    const initialID =
+      "z" + Math.round(now.getTimezoneOffset() / -60).toFixed(0);
+    invokeNewGame(gameCode, initialID);
+  } else {
+    const initialID = testIDs[gameCode][1];
+    invokeNewGame(gameCode, initialID);
+  }
 
   const computeSpriteVertices = (props: {
     cards: CardSprite[];
@@ -1040,12 +1050,12 @@ js: ${jsTime.toFixed(1)}ms
     }
 
     if (state.rank !== lastSeenRank) {
-      const stats = getStats();
-
       if (game.isWin(state)) {
+        const stats = getStats();
         stats[gameCode].wins += 1;
         setStats(stats);
         renderStats(stats[gameCode]);
+        invokeCheckGame(gameCode, uid, state.rank, state.moves);
       }
     }
 
@@ -1082,21 +1092,46 @@ js: ${jsTime.toFixed(1)}ms
     state.moves.push({ a, b, n });
 
     if (state.rank !== lastSeenRank) {
-      const stats = getStats();
-
       if (state.moves.length === 1) {
+        const stats = getStats();
         stats[gameCode].games += 1;
+        stats[gameCode].lastDate = now.toDateString();
         setStats(stats);
         renderStats(stats[gameCode]);
       }
     }
 
-    if (state.moves.length > 52) {
-      invokeCheckGame(gameCode, uid, state.rank, state.moves);
+    if (state.moves.length > 0) {
+      // invokeCheckGame(gameCode, uid, state.rank, state.moves);
     }
 
     return { a, b, n };
   };
+
+  window.addEventListener("pagehide", () => {
+    if (state.moves.length < 8) return;
+
+    const url =
+      import.meta.env.MODE === "development"
+        ? "http://localhost:9000/lambda-url/check_game"
+        : `https://l43lgrwkv67ifusmm75o3ikgx40zwzdr.lambda-url.us-east-2.on.aws/`;
+    const moveData = state.moves.reduce(
+      (acc, { a, b, n }) =>
+        acc +
+        String.fromCharCode(a + 65) +
+        String.fromCharCode(b + 65) +
+        String.fromCharCode(n + 65),
+      "",
+    );
+    const body = new Blob(
+      [btoa(`${gameCode} ${uid} ${state.rank} ${moveData}`)],
+      {
+        type: "application/octet-stream",
+      },
+    );
+
+    navigator.sendBeacon(url, body);
+  });
 
   canvas.addEventListener("pointerleave", (_e: PointerEvent) => {
     // if (state.selection.cardIndex !== undefined) {
