@@ -1041,7 +1041,8 @@ js: ${jsTime.toFixed(1)}ms
     }
 
     // update automove srcs
-    if (hasAutomove && state.selection.a === KlondikeDepot.Stock) {
+    if (hasAutomove && gameCode === "sa") {
+      // moves from the tableau or stock can trigger automoves from the waste
       updateCardLocations(
         state,
         KlondikeDepot.Waste,
