@@ -486,9 +486,10 @@ const make = async () => {
         [x0, y0 + h],
         [x0 + w, y0 + h],
       ];
+      const isFoundation = game.foundations().includes(depot.id);
       const uvs = getSpritesheetUVs({
         texture: spritesheet,
-        col: depot.type === "pile" && depot.cards.length > 1 ? 1 : 0,
+        col: isFoundation ? 4 : 0,
         row: 4,
         p: cardMargin,
         w: cardWidth,
