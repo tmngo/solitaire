@@ -232,7 +232,7 @@ const make = async () => {
     });
 
   if (!navigator.gpu) {
-    document.body.innerHTML = `<div class="message">This browser isn't supported.</div>`;
+    document.body.innerHTML = `<div class="message">This browser doesn't support WebGPU.</div>`;
     throw new Error("WebGPU is not supported on this browser.");
   }
   const adapter = await navigator.gpu.requestAdapter();
