@@ -231,43 +231,6 @@ const make = async () => {
       }, 1000);
     });
 
-  // Connect to server
-
-  // const dial = () => {
-  //   const port = 3001;
-  //   // try {
-  //     conn = new WebSocket(`ws://${location.hostname}:${port}/subscribe`);
-  //     console.log(conn);
-  //     conn.addEventListener("close", (ev) => {
-  //       console.log("close", ev);
-  //       if (ev.code !== 1001) {
-  //         console.log("close", "Reconnecting in 1s", ev);
-  //         setTimeout(dial, 1000);
-  //       }
-  //     });
-  //     conn.addEventListener("open", (ev) => {
-  //       console.info("open", ev);
-  //     });
-  //     conn.addEventListener("message", (ev) => {
-  //       if (typeof ev.data !== "string") {
-  //         console.error("unexpected message type", typeof ev.data);
-  //         return;
-  //       }
-  //       // console.log("message", ev.data);
-  //       if (ev.data.startsWith("init<")) {
-  //         console.log(ev.data);
-  //         state.selection.cardIndex = undefined;
-  //         Klondike.setState(state, ev.data);
-  //         // console.log(split);
-  //         // console.log(state);
-  //       }
-  //     });
-  //   // } catch (e) {
-  //   //   console.error(e);
-  //   // }
-  // };
-  // dial();
-
   if (!navigator.gpu) {
     document.body.innerHTML = `<div class="message">This browser isn't supported.</div>`;
     throw new Error("WebGPU is not supported on this browser.");
@@ -322,13 +285,6 @@ const make = async () => {
     device,
     format: canvasFormat,
   });
-  // const debounce = (fn: (entries: any) => void, ms: number) => {
-  //   let timeout: number;
-  //   return function (this: typeof fn, ...args: Parameters<typeof fn>) {
-  //     clearTimeout(timeout);
-  //     timeout = setTimeout(() => fn.apply(this, args), ms);
-  //   };
-  // };
 
   const left = 15;
   const top = 35;
@@ -552,11 +508,6 @@ const make = async () => {
         const zClip = 1.0;
         positions[i] = Vec2.from(pos3d[0] / zClip, pos3d[1] / zClip);
       }
-
-      // const topLeft = [positions[0][0], positions[0][1], 0, 0];
-      // const topRight = [...Vec2.rotate([x0 + w, y0], origin, rad), 1, 0];
-      // const bottomLeft = [...Vec2.rotate([x0, y0 + h], origin, rad), 0, 1];
-      // const bottomRight = [...Vec2.rotate([x0 + w, y0 + h], origin, rad), 1, 1];
 
       const { col, row } =
         // card.location?.type === "pile" &&
@@ -948,33 +899,6 @@ js: ${jsTime.toFixed(1)}ms
 
       return;
     }
-
-    // Handle restock
-    // if (game.isRestockValid()) {
-    //   for (let i = 0; i < state.depots.length; i++) {
-    //     const depot = state.depots[i];
-    //     if (
-    //       Rect.hasPoint(
-    //         {
-    //           x: e.offsetX,
-    //           y: e.offsetY,
-    //         },
-    //         depot.rect
-    //       )
-    //     ) {
-    //       if (depot.id === KlondikeDepot.Stock && depot.cards.length === 0) {
-    //         if (state.depots[KlondikeDepot.Waste].cards.length > 0) {
-    //           const a = KlondikeDepot.Waste;
-    //           const b = KlondikeDepot.Stock;
-    //           const n = state.depots[a].cards.length;
-    //           state.lastMove = { a, b, n };
-    //           conn?.send(`move>${a} ${b} ${n}`);
-    //         }
-    //         return;
-    //       }
-    //     }
-    //   }
-    // }
   });
 
   const getAtPointer = (state: State, x: number, y: number) => {
@@ -1153,22 +1077,6 @@ js: ${jsTime.toFixed(1)}ms
   });
 
   canvas.addEventListener("pointerleave", (_e: PointerEvent) => {
-    // if (state.selection.cardIndex !== undefined) {
-    // const index = state.selection.cardIndex;
-    // const card = state.cards[index];
-    // if (card.location) {
-    //   const cardCount = state.cards.length - index;
-    //   for (let j = 0; j < cardCount; j++) {
-    //     state.cards[index + j] = {
-    //       ...state.cards[index + j],
-    //       x: card.location.rect.x,
-    //       y:
-    //         card.location.rect.y +
-    //         (card.location.cards.length - cardCount + j) * 20,
-    //     };
-    //   }
-    // }
-    // }
     if (state.selection.a !== undefined && state.selection.n !== undefined) {
       moveHandToDepot(state, state.selection.a);
       updateCardLocations(state, state.selection.a, state.selection.n);
@@ -1190,70 +1098,11 @@ js: ${jsTime.toFixed(1)}ms
 
       if (stock.cards.length > 1) {
         if (state.hovered === 0 && hovered !== 0) {
-          // const movedCount = moveToTop(
-          //   state,
-          //   KlondikeDepot.Stock,
-          //   stock.cards.length,
-          //   true
-          // );
           updateCardLocations(state, KlondikeDepot.Stock, stock.cards.length);
         } else if (state.hovered !== 0 && hovered === 0) {
-          if (stock.cards.length > 0) {
-            // const movedCount = moveToTop(
-            //   state,
-            //   KlondikeDepot.Stock,
-            //   stock.cards.length,
-            //   true
-            // );
-            // const waste = state.depots[KlondikeDepot.Waste];
-            // const [xScale, yScale] = Depot.getOffsetScale(waste);
-            // state.selection.aTop = KlondikeDepot.Stock;
-            // for (let i = stock.cards.length - 1; i >= 0; i--) {
-            //   const offset =
-            //     (waste.cards.length + stock.cards.length - i - 1) * 20;
-            //   stock.cards[i] = {
-            //     ...stock.cards[i],
-            //     x: waste.rect.x + offset * xScale,
-            //     y:
-            //       waste.rect.y +
-            //       offset * yScale -
-            //       (i >= stock.cards.length - 3 ? 10 : 20),
-            //   };
-            // }
-          }
         }
       }
 
-      // const cardIndex = state.cards.findLastIndex((card) =>
-      //   Rect.hasPoint(
-      //     {
-      //       x: e.offsetX,
-      //       y: e.offsetY,
-      //     },
-      //     Rect.from(card.x, card.y, cardWidth * s, cardHeight * s)
-      //   )
-      // );
-
-      // console.log("hovered", state.hoveredCard, cardIndex);
-      // if (state.hoveredCard === -1 && cardIndex !== -1) {
-      //   const card = state.cards[cardIndex];
-      //   const n =
-      //     card.location.cards.length - findCardIndex(card.location.cards, card);
-      //   if (
-      //     card.location.id !== KlondikeDepot.Stock &&
-      //     game.isValidStart(state, card.location.id, n)
-      //   ) {
-      //     console.log("isValidStart");
-      //     card.y += 5;
-      //     state.hoveredCard = cardIndex;
-      //   }
-      //   state.hovered = hovered;
-      //   return;
-      // } else if (state.hoveredCard !== -1 && cardIndex !== state.hoveredCard) {
-      //   // mouse leave
-      //   state.cards[state.hoveredCard].y -= 5;
-      //   state.hoveredCard = -1;
-      // }
       state.hovered = hovered;
 
       return;
