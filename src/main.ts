@@ -370,12 +370,9 @@ const make = async () => {
       params.append("id", id);
     }
 
-    // const url = `https://bpt6k6puo6mrlt67zf2jce7ce40qqmgm.lambda-url.us-east-2.on.aws/`;
-    // const url = `https://72cgjbyjm27zyb7c3luk2aue540fzyjl.lambda-url.us-east-2.on.aws/`;
-
     const url =
       import.meta.env.MODE === "development"
-        ? "http://192.168.1.35:9000/lambda-url/new_game"
+        ? `${import.meta.env.VITE_API_HOST}/lambda-url/new_game`
         : "https://72cgjbyjm27zyb7c3luk2aue540fzyjl.lambda-url.us-east-2.on.aws/";
     const res = await fetch(`${url}?${params}`);
     if (!res.ok) {
@@ -417,12 +414,9 @@ const make = async () => {
       "",
     );
     try {
-      // const url = `https://l43lgrwkv67ifusmm75o3ikgx40zwzdr.lambda-url.us-east-2.on.aws/`;
-
       const url =
         import.meta.env.MODE === "development"
-          ? // ? "http://localhost:9000/lambda-url/check_game"
-            "http://192.168.1.35:9000/lambda-url/check_game"
+          ? `${import.meta.env.VITE_API_HOST}/lambda-url/check_game`
           : `https://l43lgrwkv67ifusmm75o3ikgx40zwzdr.lambda-url.us-east-2.on.aws/`;
 
       const res = await fetch(url, {
@@ -1138,8 +1132,7 @@ js: ${jsTime.toFixed(1)}ms
 
     const url =
       import.meta.env.MODE === "development"
-        ? // ? "http://localhost:9000/lambda-url/check_game"
-          "http://192.168.1.35:9000/lambda-url/check_game"
+        ? `${import.meta.env.VITE_API_HOST}/lambda-url/check_game`
         : `https://l43lgrwkv67ifusmm75o3ikgx40zwzdr.lambda-url.us-east-2.on.aws/`;
     const moveData = state.moves.reduce(
       (acc, { a, b, n }) =>
