@@ -791,7 +791,7 @@ const make = async () => {
       hand: state.hand,
       w: cardWidth,
       h: cardHeight,
-      dt: deltaTimeS,
+      dt: Math.min(deltaTimeS, 0.05),
       s,
     });
     const vertexBuffer = device.createBuffer({
