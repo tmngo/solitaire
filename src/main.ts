@@ -319,6 +319,32 @@ const make = async () => {
 
   game.initDepots(state, left, top, cardWidth, cardHeight);
 
+  const beforeUnloadHandler = () => {
+    console.log("beforeunload");
+
+    const url =
+      import.meta.env.MODE === "development"
+        ? `${import.meta.env.VITE_API_HOST}/lambda-url/check_game`
+        : `https://l43lgrwkv67ifusmm75o3ikgx40zwzdr.lambda-url.us-east-2.on.aws/`;
+
+    const moveData = state.moves.reduce(
+      (acc, { a, b, n }) =>
+        acc +
+        String.fromCharCode(a + 65) +
+        String.fromCharCode(b + 65) +
+        String.fromCharCode(n + 65),
+      "",
+    );
+    const body = new Blob(
+      [btoa(`${gameCode} ${uid} ${state.rank} ${moveData}`)],
+      {
+        type: "application/octet-stream",
+      },
+    );
+
+    navigator.sendBeacon(url, body);
+  };
+
   const invokeNewGame = async (gameCode: GameCode, id?: string) => {
     const params = new URLSearchParams();
     params.append("g", gameCode);
@@ -345,6 +371,7 @@ const make = async () => {
     game = games[gameCode];
     game.initDepots(state, left, top, cardWidth, cardHeight);
     game.setState(state, data);
+    window.removeEventListener("beforeunload", beforeUnloadHandler);
 
     for (let i = 0; i < state.depots.length; i++) {
       if (state.depots[i].cards.length > 0) {
@@ -1048,32 +1075,15 @@ js: ${jsTime.toFixed(1)}ms
       // invokeCheckGame(gameCode, uid, state.rank, state.moves);
     }
 
+    if (state.moves.length > 8) {
+      window.addEventListener("beforeunload", beforeUnloadHandler);
+    }
+
     return { a, b, n };
   };
 
   window.addEventListener("pagehide", () => {
-    if (state.moves.length < 8) return;
-
-    const url =
-      import.meta.env.MODE === "development"
-        ? `${import.meta.env.VITE_API_HOST}/lambda-url/check_game`
-        : `https://l43lgrwkv67ifusmm75o3ikgx40zwzdr.lambda-url.us-east-2.on.aws/`;
-    const moveData = state.moves.reduce(
-      (acc, { a, b, n }) =>
-        acc +
-        String.fromCharCode(a + 65) +
-        String.fromCharCode(b + 65) +
-        String.fromCharCode(n + 65),
-      "",
-    );
-    const body = new Blob(
-      [btoa(`${gameCode} ${uid} ${state.rank} ${moveData}`)],
-      {
-        type: "application/octet-stream",
-      },
-    );
-
-    navigator.sendBeacon(url, body);
+    console.log("pagehide");
   });
 
   canvas.addEventListener("pointerleave", (_e: PointerEvent) => {
