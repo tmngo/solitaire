@@ -343,6 +343,12 @@ const make = async () => {
     );
 
     navigator.sendBeacon(url, body);
+
+    fetch(url, {
+      method: "POST",
+      body,
+      keepalive: true,
+    });
   };
 
   const invokeNewGame = async (gameCode: GameCode, id?: string) => {
