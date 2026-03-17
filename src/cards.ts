@@ -37,11 +37,11 @@ export class BitString {
   indices = (position: number) => {
     if (position >= this.length) {
       throw new Error(
-        `Position ${position} is out of range 0-${this.length - 1}.`
+        `Position ${position} is out of range 0-${this.length - 1}.`,
       );
     }
     const byte = Math.floor(position / 8);
-    const bit = 1 << position % 8;
+    const bit = 1 << (position % 8);
     return { byte, bit };
   };
 
@@ -80,11 +80,11 @@ export class BitString {
 }
 
 export interface Card {
-  suit: Suit;
+  suit: number;
   rank: Rank;
 }
 
-const from = (suit: Suit, rank: Rank): Card => ({ suit, rank });
+const from = (suit: number, rank: Rank): Card => ({ suit, rank });
 
 const isRank = (r: number): r is Rank => r >= 0 && r < 13;
 
@@ -172,7 +172,7 @@ export const mod_exponent_scaled = (
   a: number,
   b: number,
   e: number,
-  n: number
+  n: number,
 ) => {
   const r1 = a % n;
   const r2 = mod_exponent(b, e, n);
@@ -275,7 +275,7 @@ const testQuotient = (a: BitString, b: number, c: number) => {
     result === expected,
     `Expected ${b} / ${c} to be %i, got %i`,
     expected,
-    result
+    result,
   );
 };
 
@@ -286,6 +286,6 @@ const testRemainder = (a: BitString, b: number, c: number) => {
     result === expected,
     `Expected ${b} % ${c} to be %i, got %i`,
     expected,
-    result
+    result,
   );
 };
