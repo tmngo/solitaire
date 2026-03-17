@@ -38,7 +38,6 @@ const isValidStart = (state: { depots: Depot[] }, a: number, n: number) => {
   if (n === 0) return false;
 
   const cards = state.depots[a].cards.slice(state.depots[a].cards.length - n);
-  console.log(cards);
 
   if (n > 1 && !isDescending(cards)) {
     return false;
@@ -198,7 +197,6 @@ const isValidMove = (
   const isValidSuit = firstCard.suit === topDepotCard.suit - 1;
   const isValidRank =
     firstCard.rank !== 0 && firstCard.rank === topDepotCard.rank;
-  console.log(firstCard, topDepotCard);
 
   return isValidRank || isValidSuit;
 };
@@ -271,11 +269,6 @@ const setState = (
       }
     }
   }
-
-  console.log(
-    "cards",
-    state.cards.map(({ card }) => card),
-  );
 };
 
 const left = 15;
