@@ -8,16 +8,19 @@ import { Sawayama } from "./games/sawayama";
 import { createTextureFromUrl, getSpritesheetUVs } from "./render";
 import { uuidv7obj } from "uuidv7";
 import spritesheetUrl from "./assets/card-spritesheet.png";
+import hanafudaSpritesheetUrl from "./assets/hanafuda-rough-suited.png";
 import { Game, State } from "./game";
 import { FreeCell } from "./games/freecell";
+import { Ikebana } from "./games/ikebana";
 
-type GameCode = "fc" | "sa";
+type GameCode = "fc" | "sa" | "ik";
 
-const isGameCode = (x: string): x is GameCode => ["fc", "sa"].includes(x);
+const isGameCode = (x: string): x is GameCode => ["fc", "sa", "ik"].includes(x);
 
 const games: Record<GameCode, Game> = {
   sa: Sawayama,
   fc: FreeCell,
+  ik: Ikebana,
 };
 
 type Stats = Record<
@@ -35,6 +38,7 @@ const getStats = (): Stats => {
   const defaultStats = {
     fc: { games: 0, wins: 0, lastDate: "" },
     sa: { games: 0, wins: 0, lastDate: "" },
+    ik: { games: 0, wins: 0, lastDate: "" },
   };
 
   const raw = window.localStorage.getItem("stats");
@@ -72,6 +76,7 @@ const testIDs: Record<GameCode, string[]> = {
   fc: [
     "43256203036895422154045006583307961065836537730185175986996931348755583443611",
   ],
+  ik: ["2203188438857840767748193379387779671538572328448363630379"],
 };
 
 const state: State = {
@@ -156,6 +161,7 @@ const make = async () => {
     const gameOptions = [
       { code: "sa", name: "Sawayama" },
       { code: "fc", name: "FreeCell" },
+      { code: "ik", name: "Ikebana" },
     ];
 
     for (let i = 0; i < gameOptions.length; i++) {
@@ -250,6 +256,13 @@ const make = async () => {
     spritesheetUrl,
     "nearest",
   );
+
+  const [hanafudaSpritesheet, hanafudaSampler] = await createTextureFromUrl(
+    device,
+    hanafudaSpritesheetUrl,
+    "nearest",
+  );
+
   const canvas = document.querySelector("canvas");
   if (!canvas) return;
 
@@ -461,6 +474,8 @@ const make = async () => {
     // const rad = Math.PI / 6;
     const rad = 0;
 
+    const texture = gameCode === "ik" ? hanafudaSpritesheet : spritesheet;
+
     for (const depot of props.depots) {
       if (!depot.visible) continue;
       const { x: x0, y: y0 } = depot.rect;
@@ -472,7 +487,7 @@ const make = async () => {
       ];
       const isFoundation = game.foundations().includes(depot.id);
       const uvs = getSpritesheetUVs({
-        texture: spritesheet,
+        texture,
         col: isFoundation ? 4 : 0,
         row: 4,
         p: cardMargin,
@@ -549,10 +564,12 @@ const make = async () => {
         // card.x === card.location.rect.x
         //   ? { col: 1, row: 4 }
         //   :
-        { col: card.card.rank, row: card.card.suit };
+        gameCode === "ik"
+          ? { col: card.card.suit, row: 3 - card.card.rank }
+          : { col: card.card.rank, row: card.card.suit };
 
       const uvs = getSpritesheetUVs({
-        texture: spritesheet,
+        texture,
         col,
         row,
         p: cardMargin,
@@ -731,6 +748,25 @@ const make = async () => {
     ],
   });
 
+  const hanafudaBindGroup = device.createBindGroup({
+    label: "Hanafuda bind group",
+    layout: cellPipeline.getBindGroupLayout(0),
+    entries: [
+      {
+        binding: 0,
+        resource: { buffer: uniformBuffer },
+      },
+      {
+        binding: 1,
+        resource: hanafudaSampler,
+      },
+      {
+        binding: 2,
+        resource: hanafudaSpritesheet.createView(),
+      },
+    ],
+  });
+
   const infoElement = document.getElementById("info");
   let requestID: number | null = null;
 
@@ -808,7 +844,7 @@ const make = async () => {
     pass.setPipeline(cellPipeline);
     pass.setVertexBuffer(0, vertexBuffer);
     pass.setIndexBuffer(indexBuffer, "uint16");
-    pass.setBindGroup(0, bindGroup);
+    pass.setBindGroup(0, gameCode === "ik" ? hanafudaBindGroup : bindGroup);
     // pass.draw(vertices.length / 4);
     pass.drawIndexed(indices.length);
     pass.end();
