@@ -195,13 +195,16 @@ const make = async () => {
       }
 
       const now = new Date();
+
+      event.target.disabled = true;
+
       if (getStats()[selectedGameCode].lastDate !== now.toDateString()) {
         const initialID =
           "z" + Math.round(now.getTimezoneOffset() / -60).toFixed(0);
-        invokeNewGame(selectedGameCode, initialID);
+        await invokeNewGame(selectedGameCode, initialID);
       } else {
-        const initialID = testIDs[selectedGameCode][1];
-        invokeNewGame(selectedGameCode, initialID);
+        const initialID = testIDs[selectedGameCode][0];
+        await invokeNewGame(selectedGameCode, initialID);
       }
 
       gameCode = selectedGameCode;
@@ -209,7 +212,6 @@ const make = async () => {
 
       lastSeenRank = state.rank;
 
-      event.target.disabled = true;
       setTimeout(() => {
         if (event.target instanceof HTMLButtonElement) {
           event.target.disabled = false;
