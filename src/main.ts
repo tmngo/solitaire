@@ -13,6 +13,8 @@ import { FreeCell } from "./games/freecell";
 
 type GameCode = "fc" | "sa";
 
+const isGameCode = (x: string): x is GameCode => ["fc", "sa"].includes(x);
+
 const games: Record<GameCode, Game> = {
   sa: Sawayama,
   fc: FreeCell,
@@ -30,13 +32,19 @@ type Stats = Record<
 let lastSeenRank: string | undefined = undefined;
 
 const getStats = (): Stats => {
-  const raw = window.localStorage.getItem("stats");
-  if (raw) return JSON.parse(raw);
-
-  return {
+  const defaultStats = {
     fc: { games: 0, wins: 0, lastDate: "" },
     sa: { games: 0, wins: 0, lastDate: "" },
   };
+
+  const raw = window.localStorage.getItem("stats");
+  if (raw)
+    return {
+      ...defaultStats,
+      ...JSON.parse(raw),
+    };
+
+  return defaultStats;
 };
 
 const setStats = (value: Stats) => {
@@ -79,7 +87,7 @@ const state: State = {
 
 let storedGameCode = window.localStorage.getItem("code");
 let gameCode: GameCode =
-  storedGameCode === "fc" || storedGameCode === "sa" ? storedGameCode : "sa";
+  storedGameCode !== null && isGameCode(storedGameCode) ? storedGameCode : "sa";
 let selectedGameCode: GameCode = gameCode;
 let game: Game = games[gameCode];
 
@@ -145,30 +153,25 @@ const make = async () => {
 
   const selectEl = document.querySelector<HTMLSelectElement>("#select");
   if (selectEl) {
-    selectEl.innerHTML = `
-        <option value="sa">Sawayama</option>
-        <option value="fc">FreeCell</option>
-      `;
-    for (let i = 0; i < selectEl.childElementCount; i++) {
-      const child = selectEl.children.item(i);
-      if (
-        child instanceof HTMLOptionElement &&
-        child.value === selectedGameCode
-      ) {
-        child.selected = true;
-      }
+    const gameOptions = [
+      { code: "sa", name: "Sawayama" },
+      { code: "fc", name: "FreeCell" },
+    ];
+
+    for (let i = 0; i < gameOptions.length; i++) {
+      const option = document.createElement("option");
+      option.value = gameOptions[i].code;
+      option.innerText = gameOptions[i].name;
+      if (gameOptions[i].code === selectedGameCode) option.selected = true;
+
+      selectEl.appendChild(option);
     }
 
     selectEl.onchange = () => {
-      switch (selectEl.value) {
-        case "fc":
-          selectedGameCode = "fc";
-          break;
-        case "sa":
-          selectedGameCode = "sa";
-          break;
-        default:
-          selectedGameCode = "sa";
+      if (isGameCode(selectEl.value)) {
+        selectedGameCode = selectEl.value;
+      } else {
+        selectedGameCode = "sa";
       }
       renderStats(getStats()[selectedGameCode]);
     };
@@ -896,6 +899,7 @@ js: ${jsTime.toFixed(1)}ms
 
     if (result !== undefined) {
       if (
+        gameCode === "sa" &&
         result.a === KlondikeDepot.Stock &&
         result.n === 1 &&
         state.depots[result.a].cards.length > 1
