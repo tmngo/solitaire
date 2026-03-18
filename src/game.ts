@@ -78,4 +78,5 @@ export type State = {
   hoveredCard: number;
   rank: string;
   moves: { a: number; b: number; n: number }[];
+  isWin: boolean;
 };

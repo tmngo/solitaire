@@ -88,6 +88,7 @@ const state: State = {
   hoveredCard: -1,
   rank: "",
   moves: [],
+  isWin: false,
 };
 
 let storedGameCode = window.localStorage.getItem("code");
@@ -390,6 +391,7 @@ const make = async () => {
 
     console.log("rank", rank);
     state.rank = rank;
+    state.isWin = false;
     game = games[gameCode];
     game.initDepots(state, left, top, cardWidth, cardHeight);
     game.setState(state, data);
@@ -931,6 +933,7 @@ js: ${jsTime.toFixed(1)}ms
     }
 
     if (state.selection.a !== undefined) return;
+    if (state.isWin) return;
 
     const worldPos = getMouseWorldPosition(e);
     const result = getAtPointer(state, worldPos.x, worldPos.y);
@@ -1065,13 +1068,14 @@ js: ${jsTime.toFixed(1)}ms
       );
     }
 
-    if (game.isWin(state)) {
+    if (game.isWin(state) && !state.isWin) {
       if (state.rank !== lastSeenRank) {
         const stats = getStats();
         stats[gameCode].wins += 1;
         setStats(stats);
         renderStats(stats[gameCode]);
       }
+      state.isWin = true;
       invokeCheckGame(gameCode, uid, state.rank, state.moves);
     }
 
