@@ -1075,6 +1075,15 @@ js: ${jsTime.toFixed(1)}ms
         setStats(stats);
         renderStats(stats[gameCode]);
       }
+
+      if (gameCode === "ik") {
+        for (let i = 0; i < state.depots.length; i++) {
+          state.depots[i].type = "pile";
+          if (state.depots[i].cards.length > 0)
+            updateCardLocations(state, i, state.depots[i].cards.length);
+        }
+      }
+
       state.isWin = true;
       invokeCheckGame(gameCode, uid, state.rank, state.moves);
     }
