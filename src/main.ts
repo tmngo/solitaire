@@ -195,18 +195,10 @@ const make = async () => {
         invokeCheckGame(gameCode, uid, state.rank, state.moves);
       }
 
-      const now = new Date();
-
       event.target.disabled = true;
 
-      if (getStats()[selectedGameCode].lastDate !== now.toDateString()) {
-        const initialID =
-          "z" + Math.round(now.getTimezoneOffset() / -60).toFixed(0);
-        await invokeNewGame(selectedGameCode, initialID);
-      } else {
-        const initialID = testIDs[selectedGameCode][1];
-        await invokeNewGame(selectedGameCode, initialID);
-      }
+      const initialID = undefined;
+      await invokeNewGame(selectedGameCode, initialID);
 
       gameCode = selectedGameCode;
       window.localStorage.setItem("code", selectedGameCode);
