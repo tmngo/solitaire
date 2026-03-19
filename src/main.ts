@@ -204,7 +204,7 @@ const make = async () => {
           "z" + Math.round(now.getTimezoneOffset() / -60).toFixed(0);
         await invokeNewGame(selectedGameCode, initialID);
       } else {
-        const initialID = testIDs[selectedGameCode][0];
+        const initialID = testIDs[selectedGameCode][1];
         await invokeNewGame(selectedGameCode, initialID);
       }
 
