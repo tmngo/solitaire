@@ -102,6 +102,11 @@ const resetState = (rank: string) => {
   state.moves = [];
   state.rank = rank;
   state.selection = { offset: { x: 0, y: 0 }, aTop: 1 };
+
+  const gidElement = document.querySelector<HTMLDivElement>("#gid");
+  if (gidElement) {
+    gidElement.innerText = rank;
+  }
 };
 
 let storedGameCode = window.localStorage.getItem("code");
@@ -154,17 +159,33 @@ const make = async () => {
   const sidebarEl = document.querySelector<HTMLDivElement>("#sidebar");
   if (sidebarEl) {
     sidebarEl.innerHTML = `
-    <button id="toggle-sidebar">⛭</button>
-    <select id="select"></select>
-    <button id="new-game">New (random)</button>
-    <button id="new-daily-game">New (daily)</button>
-    <button id="reset-game">Reset</button>
-    <div id="stats">
-      <div>Games</div><div id="stats-g" class="num">0</div>
-      <div>Wins</div><div id="stats-w" class="num">0</div>
-      <div>Winrate</div><div id="stats-r" class="num">-</div>
-    </div>
+      <button id="toggle-sidebar">⛭</button>
+      <select id="select"></select>
+      <button id="new-game">New (random)</button>
+      <button id="new-daily-game">New (daily)</button>
+      <button id="reset-game">Reset</button>
+      <div id="stats">
+        <div>Games</div><div id="stats-g" class="num">0</div>
+        <div>Wins</div><div id="stats-w" class="num">0</div>
+        <div>Winrate</div><div id="stats-r" class="num">-</div>
+      </div>
+      <div id="gid-container">
+        <div id="gid-label">_</div>
+        <div id="gid"></div>
+      </div>
     `;
+  }
+
+  const gidElement = document.querySelector<HTMLDivElement>("#gid");
+  if (gidElement) {
+    gidElement.addEventListener("pointerdown", () => {
+      navigator.clipboard.writeText(state.rank);
+      const labelElement = document.querySelector<HTMLDivElement>("#gid-label");
+      if (labelElement) {
+        labelElement.innerText = "Copied!";
+        setTimeout(() => (labelElement.innerText = ""), 1000);
+      }
+    });
   }
 
   const selectEl = document.querySelector<HTMLSelectElement>("#select");
@@ -414,8 +435,6 @@ const make = async () => {
 
     const encoded = await res.text();
     const [rank, ...data] = atob(encoded).split(" ");
-
-    console.log("rank", rank);
 
     resetState(rank);
 

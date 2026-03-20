@@ -193,6 +193,22 @@ option {
   margin-right: 0.5em;
 }
 
+#gid-container {
+  color: #fffa;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.625em;
+  gap: 0.25em;
+  margin-top: auto;
+}
+
+#gid {
+  cursor: pointer;
+  justify-self: end;
+  user-select: none;
+  word-wrap: anywhere;
+}
+
 .num {
   justify-self: end;
 }
