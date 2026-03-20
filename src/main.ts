@@ -91,6 +91,19 @@ const state: State = {
   isWin: false,
 };
 
+const resetState = (rank: string) => {
+  lastSeenRank = state.rank;
+  state.cards = [];
+  state.depots = [];
+  state.hand = [];
+  state.hovered = -1;
+  state.hoveredCard = -1;
+  state.isWin = false;
+  state.moves = [];
+  state.rank = rank;
+  state.selection = { offset: { x: 0, y: 0 }, aTop: 1 };
+};
+
 let storedGameCode = window.localStorage.getItem("code");
 let gameCode: GameCode =
   storedGameCode !== null && isGameCode(storedGameCode) ? storedGameCode : "sa";
@@ -120,12 +133,8 @@ const moveHandToDepot = (
   state: { depots: Depot[]; hand: CardSprite[] },
   b: number,
 ) => {
-  // modify new depot
   state.depots[b].cards.push(...state.hand);
-
   state.hand = [];
-
-  return state.hand.length;
 };
 
 const getUserID = () => {
@@ -203,8 +212,6 @@ const make = async () => {
       gameCode = selectedGameCode;
       window.localStorage.setItem("code", selectedGameCode);
 
-      lastSeenRank = state.rank;
-
       setTimeout(() => {
         if (event.target instanceof HTMLButtonElement) {
           event.target.disabled = false;
@@ -225,7 +232,6 @@ const make = async () => {
 
       invokeNewGame(selectedGameCode, state.rank);
       gameCode = selectedGameCode;
-      lastSeenRank = state.rank;
 
       event.target.disabled = true;
       setTimeout(() => {
@@ -382,8 +388,9 @@ const make = async () => {
     const [rank, ...data] = atob(encoded).split(" ");
 
     console.log("rank", rank);
-    state.rank = rank;
-    state.isWin = false;
+
+    resetState(rank);
+
     game = games[gameCode];
     game.initDepots(state, left, top, cardWidth, cardHeight);
     game.setState(state, data);
