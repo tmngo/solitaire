@@ -133,7 +133,7 @@ option {
   padding-left: 0.125em;
 }
 
-#new-game, #reset-game {
+#new-game, #new-daily-game, #reset-game {
   font-size: 0.75rem;
   padding: 0.25em 0.5em;
   display: flex;
@@ -154,9 +154,9 @@ option {
   cursor: pointer;
 }
 
-#new-game {
+/* #new-game {
   font-size: 0.875rem;
-}
+} */
 
 #new-game:hover, #reset-game:hover {
   transform: translate(0.125em, 0.125em);

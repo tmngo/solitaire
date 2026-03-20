@@ -156,7 +156,8 @@ const make = async () => {
     sidebarEl.innerHTML = `
     <button id="toggle-sidebar">⛭</button>
     <select id="select"></select>
-    <button id="new-game">New</button>
+    <button id="new-game">New (random)</button>
+    <button id="new-daily-game">New (daily)</button>
     <button id="reset-game">Reset</button>
     <div id="stats">
       <div>Games</div><div id="stats-g" class="num">0</div>
@@ -192,6 +193,33 @@ const make = async () => {
       renderStats(getStats()[selectedGameCode]);
     };
   }
+
+  document
+    .querySelector<HTMLButtonElement>("#new-daily-game")
+    ?.addEventListener("pointerup", async (event) => {
+      if (!(event.target instanceof HTMLButtonElement)) return;
+
+      if (event.target.disabled) return;
+
+      if (!game.isWin(state) && state.moves.length > 8) {
+        invokeCheckGame(gameCode, uid, state.rank, state.moves);
+      }
+
+      event.target.disabled = true;
+
+      const initialID =
+        "z" + Math.round(now.getTimezoneOffset() / -60).toFixed(0);
+      invokeNewGame(gameCode, initialID);
+
+      gameCode = selectedGameCode;
+      window.localStorage.setItem("code", selectedGameCode);
+
+      setTimeout(() => {
+        if (event.target instanceof HTMLButtonElement) {
+          event.target.disabled = false;
+        }
+      }, 1000);
+    });
 
   document
     .querySelector<HTMLButtonElement>("#new-game")
