@@ -170,7 +170,7 @@ const make = async () => {
         <div>Winrate</div><div id="stats-r" class="num">-</div>
       </div>
       <div id="gid-container">
-        <div id="gid-label">_</div>
+        <div id="gid-label"></div>
         <div id="gid"></div>
       </div>
     `;
