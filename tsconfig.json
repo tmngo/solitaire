@@ -3,7 +3,7 @@
     "target": "esnext",
     "useDefineForClassFields": true,
     "module": "esnext",
-    "lib": ["es2024", "DOM"],
+    "lib": ["es2024", "DOM", "ESNext.Temporal"],
     "moduleResolution": "bundler",
     "strict": true,
     "sourceMap": true,
