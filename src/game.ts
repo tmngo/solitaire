@@ -55,7 +55,14 @@ export interface Game {
   ) => void;
 }
 
+export type GameCode = "fc" | "sa" | "ik";
+
+const gameCodes = ["fc", "sa", "ik"];
+
+export const isGameCode = (x: string): x is GameCode => gameCodes.includes(x);
+
 export type State = {
+  gameCode: GameCode;
   // Tracks absolute order of cards for rendering
   cards: CardSprite[];
   // Tracks card locations for game rules
@@ -79,4 +86,5 @@ export type State = {
   rank: string;
   moves: { a: number; b: number; n: number }[];
   isWin: boolean;
+  day: number;
 };

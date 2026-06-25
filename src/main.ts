@@ -9,13 +9,9 @@ import { createTextureFromUrl, getSpritesheetUVs } from "./render";
 import { uuidv7obj } from "uuidv7";
 import spritesheetUrl from "./assets/card-spritesheet.png";
 import hanafudaSpritesheetUrl from "./assets/hanafuda-rough-suited.png";
-import { Game, State } from "./game";
+import { Game, GameCode, isGameCode, State } from "./game";
 import { FreeCell } from "./games/freecell";
 import { Ikebana } from "./games/ikebana";
-
-type GameCode = "fc" | "sa" | "ik";
-
-const isGameCode = (x: string): x is GameCode => ["fc", "sa", "ik"].includes(x);
 
 const games: Record<GameCode, Game> = {
   sa: Sawayama,
@@ -31,8 +27,6 @@ type Stats = Record<
     lastDate: string;
   }
 >;
-
-let lastSeenRank: string | undefined = undefined;
 
 const getStats = (): Stats => {
   const defaultStats = {
@@ -79,20 +73,25 @@ const testIDs: Record<GameCode, string[]> = {
   ik: ["2203188438857840767748193379387779671538572328448363630379"],
 };
 
-const state: State = {
-  cards: [],
-  depots: [],
-  hand: [],
-  selection: { offset: { x: 0, y: 0 }, aTop: 1 },
-  hovered: -1,
-  hoveredCard: -1,
-  rank: "",
-  moves: [],
-  isWin: false,
+const loadState = () => {
+  return window.localStorage.getItem("state");
 };
 
-const resetState = (rank: string) => {
-  lastSeenRank = state.rank;
+const saveState = (state: State) => {
+  const copy = structuredClone(state);
+
+  for (let i = 0; i < copy.depots.length; i++) {
+    for (let j = 0; j < copy.depots[i].cards.length; j++) {
+      copy.depots[i].cards[j].currentX = copy.depots[i].rect.x;
+      copy.depots[i].cards[j].currentY = copy.depots[i].rect.y;
+    }
+  }
+
+  window.localStorage.setItem("state", JSON.stringify(copy));
+};
+
+const resetState = (state: State, rank: string, gameCode: GameCode) => {
+  state.gameCode = gameCode;
   state.cards = [];
   state.depots = [];
   state.hand = [];
@@ -103,17 +102,13 @@ const resetState = (rank: string) => {
   state.rank = rank;
   state.selection = { offset: { x: 0, y: 0 }, aTop: 1 };
 
+  window.localStorage.removeItem("state");
+
   const gidElement = document.querySelector<HTMLDivElement>("#gid");
   if (gidElement) {
     gidElement.innerText = rank;
   }
 };
-
-let storedGameCode = window.localStorage.getItem("code");
-let gameCode: GameCode =
-  storedGameCode !== null && isGameCode(storedGameCode) ? storedGameCode : "sa";
-let selectedGameCode: GameCode = gameCode;
-let game: Game = games[gameCode];
 
 // Move to top of sort order.
 const moveToHand = (
@@ -155,6 +150,28 @@ const make = async () => {
   const uid = getUserID();
 
   let isSidebarVisible = false;
+
+  let storedGameCode = window.localStorage.getItem("code");
+
+  let state: State = {
+    gameCode:
+      storedGameCode !== null && isGameCode(storedGameCode)
+        ? storedGameCode
+        : "sa",
+    cards: [],
+    depots: [],
+    hand: [],
+    selection: { offset: { x: 0, y: 0 }, aTop: 1 },
+    hovered: -1,
+    hoveredCard: -1,
+    rank: "",
+    moves: [],
+    isWin: false,
+    day: 0,
+  };
+
+  let selectedGameCode: GameCode = state.gameCode;
+  let game: Game = games[state.gameCode];
 
   const sidebarEl = document.querySelector<HTMLDivElement>("#sidebar");
   if (sidebarEl) {
@@ -222,17 +239,20 @@ const make = async () => {
 
       if (event.target.disabled) return;
 
-      if (!game.isWin(state) && state.moves.length > 8) {
-        invokeCheckGame(gameCode, uid, state.rank, state.moves);
+      if (state.moves.length > 8) {
+        handleOutcome(state.gameCode, false);
       }
 
       event.target.disabled = true;
 
       const initialID =
         "z" + Math.round(now.getTimezoneOffset() / -60).toFixed(0);
-      invokeNewGame(gameCode, initialID);
+      invokeNewGame(state.gameCode, initialID);
 
-      gameCode = selectedGameCode;
+      state.day = Temporal.PlainDate.from("2026-01-01").until(
+        Temporal.Now.plainDateISO(),
+      ).days;
+
       window.localStorage.setItem("code", selectedGameCode);
 
       setTimeout(() => {
@@ -249,8 +269,8 @@ const make = async () => {
 
       if (event.target.disabled) return;
 
-      if (!game.isWin(state) && state.moves.length > 8) {
-        invokeCheckGame(gameCode, uid, state.rank, state.moves);
+      if (state.moves.length > 8) {
+        handleOutcome(state.gameCode, false);
       }
 
       event.target.disabled = true;
@@ -258,7 +278,7 @@ const make = async () => {
       const initialID = undefined;
       await invokeNewGame(selectedGameCode, initialID);
 
-      gameCode = selectedGameCode;
+      state.day = 0;
       window.localStorage.setItem("code", selectedGameCode);
 
       setTimeout(() => {
@@ -275,12 +295,11 @@ const make = async () => {
 
       if (event.target.disabled) return;
 
-      if (!game.isWin(state) && state.moves.length > 8) {
-        invokeCheckGame(gameCode, uid, state.rank, state.moves);
+      if (state.moves.length > 8) {
+        handleOutcome(state.gameCode, false);
       }
 
       invokeNewGame(selectedGameCode, state.rank);
-      gameCode = selectedGameCode;
 
       event.target.disabled = true;
       setTimeout(() => {
@@ -384,36 +403,7 @@ const make = async () => {
 
   game.initDepots(state, left, top, cardWidth, cardHeight);
 
-  const beforeUnloadHandler = () => {
-    console.log("beforeunload");
-
-    const url =
-      import.meta.env.MODE === "development"
-        ? `${import.meta.env.VITE_API_HOST}/lambda-url/check_game`
-        : `https://l43lgrwkv67ifusmm75o3ikgx40zwzdr.lambda-url.us-east-2.on.aws/`;
-
-    const moveData = state.moves.reduce(
-      (acc, { a, b, n }) =>
-        acc +
-        String.fromCharCode(a + 65) +
-        String.fromCharCode(b + 65) +
-        String.fromCharCode(n + 65),
-      "",
-    );
-    const body = new Blob(
-      [btoa(`${gameCode} ${uid} ${state.rank} ${moveData}`)],
-      {
-        type: "application/octet-stream",
-      },
-    );
-
-    fetch(url, {
-      method: "POST",
-      body,
-      keepalive: true,
-    });
-  };
-
+  // Requests a new game and sets the game and game state.
   const invokeNewGame = async (gameCode: GameCode, id?: string) => {
     const params = new URLSearchParams();
     params.append("g", gameCode);
@@ -435,12 +425,11 @@ const make = async () => {
     const encoded = await res.text();
     const [rank, ...data] = atob(encoded).split(" ");
 
-    resetState(rank);
+    resetState(state, rank, gameCode);
 
     game = games[gameCode];
     game.initDepots(state, left, top, cardWidth, cardHeight);
     game.setState(state, data);
-    window.removeEventListener("beforeunload", beforeUnloadHandler);
 
     for (let i = 0; i < state.depots.length; i++) {
       if (state.depots[i].cards.length > 0) {
@@ -449,6 +438,16 @@ const make = async () => {
     }
 
     renderStats(getStats()[gameCode]);
+  };
+
+  const loadGame = (saved: State) => {
+    state = saved;
+
+    for (let i = 0; i < state.depots.length; i++) {
+      if (state.depots[i].cards.length > 0) {
+        updateCardLocations(state, i, state.depots[i].cards.length);
+      }
+    }
   };
 
   const invokeCheckGame = async (
@@ -497,13 +496,20 @@ const make = async () => {
   // "36359609971579494075828714929049818041973629260136807041935467228254228542212" // difficult
 
   const now = new Date();
-  if (getStats()[gameCode].lastDate !== now.toDateString()) {
-    const initialID =
-      "z" + Math.round(now.getTimezoneOffset() / -60).toFixed(0);
-    invokeNewGame(gameCode, initialID);
+
+  const saved = loadState();
+  if (saved) {
+    const parsed: State = JSON.parse(saved);
+    loadGame(parsed);
   } else {
-    const initialID = testIDs[gameCode][1];
-    invokeNewGame(gameCode, initialID);
+    if (getStats()[state.gameCode].lastDate !== now.toDateString()) {
+      const initialID =
+        "z" + Math.round(now.getTimezoneOffset() / -60).toFixed(0);
+      invokeNewGame(state.gameCode, initialID);
+    } else {
+      const initialID = testIDs[state.gameCode][1];
+      invokeNewGame(state.gameCode, initialID);
+    }
   }
 
   const computeSpriteVertices = (props: {
@@ -523,7 +529,7 @@ const make = async () => {
     // const rad = Math.PI / 6;
     const rad = 0;
 
-    const texture = gameCode === "ik" ? hanafudaSpritesheet : spritesheet;
+    const texture = state.gameCode === "ik" ? hanafudaSpritesheet : spritesheet;
 
     for (const depot of props.depots) {
       if (!depot.visible) continue;
@@ -613,7 +619,7 @@ const make = async () => {
         // card.x === card.location.rect.x
         //   ? { col: 1, row: 4 }
         //   :
-        gameCode === "ik"
+        state.gameCode === "ik"
           ? { col: card.card.suit, row: 3 - card.card.rank }
           : { col: card.card.rank, row: card.card.suit };
 
@@ -893,7 +899,10 @@ const make = async () => {
     pass.setPipeline(cellPipeline);
     pass.setVertexBuffer(0, vertexBuffer);
     pass.setIndexBuffer(indexBuffer, "uint16");
-    pass.setBindGroup(0, gameCode === "ik" ? hanafudaBindGroup : bindGroup);
+    pass.setBindGroup(
+      0,
+      state.gameCode === "ik" ? hanafudaBindGroup : bindGroup,
+    );
     // pass.draw(vertices.length / 4);
     pass.drawIndexed(indices.length);
     pass.end();
@@ -978,14 +987,14 @@ js: ${jsTime.toFixed(1)}ms
     }
 
     if (state.selection.a !== undefined) return;
-    if (state.isWin) return;
+    if (game.isWin(state)) return;
 
     const worldPos = getMouseWorldPosition(e);
     const result = getAtPointer(state, worldPos.x, worldPos.y);
 
     if (result !== undefined) {
       if (
-        gameCode === "sa" &&
+        state.gameCode === "sa" &&
         result.a === KlondikeDepot.Stock &&
         result.n === 1 &&
         state.depots[result.a].cards.length > 1
@@ -1104,7 +1113,7 @@ js: ${jsTime.toFixed(1)}ms
     }
 
     // update automove srcs
-    if (hasAutomove && gameCode === "sa") {
+    if (hasAutomove && state.gameCode === "sa") {
       // moves from the tableau or stock can trigger automoves from the waste
       updateCardLocations(
         state,
@@ -1113,28 +1122,16 @@ js: ${jsTime.toFixed(1)}ms
       );
     }
 
-    if (game.isWin(state) && !state.isWin) {
-      if (state.rank !== lastSeenRank) {
-        const stats = getStats();
-        stats[gameCode].wins += 1;
-        setStats(stats);
-        renderStats(stats[gameCode]);
-      }
-
-      if (gameCode === "ik") {
-        for (let i = 0; i < state.depots.length; i++) {
-          state.depots[i].type = "pile";
-          if (state.depots[i].cards.length > 0)
-            updateCardLocations(state, i, state.depots[i].cards.length);
-        }
-      }
-
-      state.isWin = true;
-      invokeCheckGame(gameCode, uid, state.rank, state.moves);
+    if (game.isWin(state)) {
+      handleOutcome(state.gameCode, true);
+      window.localStorage.removeItem("state");
     }
 
     state.selection.a = undefined;
     state.selection.n = undefined;
+
+    saveState(state);
+
     document.body.style.cursor = "auto";
   });
 
@@ -1165,30 +1162,8 @@ js: ${jsTime.toFixed(1)}ms
     state.lastMove = { a, b, n };
     state.moves.push({ a, b, n });
 
-    if (state.rank !== lastSeenRank) {
-      if (state.moves.length === 1) {
-        const stats = getStats();
-        stats[gameCode].games += 1;
-        stats[gameCode].lastDate = now.toDateString();
-        setStats(stats);
-        renderStats(stats[gameCode]);
-      }
-    }
-
-    if (state.moves.length > 0) {
-      // invokeCheckGame(gameCode, uid, state.rank, state.moves);
-    }
-
-    if (state.moves.length > 8) {
-      window.addEventListener("beforeunload", beforeUnloadHandler);
-    }
-
     return { a, b, n };
   };
-
-  window.addEventListener("pagehide", () => {
-    console.log("pagehide");
-  });
 
   canvas.addEventListener("pointerleave", (_e: PointerEvent) => {
     if (state.selection.a !== undefined && state.selection.n !== undefined) {
@@ -1265,6 +1240,31 @@ js: ${jsTime.toFixed(1)}ms
         y: depot.rect.y + topOffset * yScale,
       });
     });
+  };
+
+  const handleOutcome = (gameCode: GameCode, isWin: boolean) => {
+    if (state.isWin) return;
+
+    if (isWin) state.isWin = true;
+
+    const stats = getStats();
+
+    stats[gameCode].games += 1;
+    if (isWin) stats[gameCode].wins += 1;
+
+    setStats(stats);
+    renderStats(stats[gameCode]);
+
+    // Win animation
+    if (gameCode === "ik") {
+      for (let i = 0; i < state.depots.length; i++) {
+        state.depots[i].type = "pile";
+        if (state.depots[i].cards.length > 0)
+          updateCardLocations(state, i, state.depots[i].cards.length);
+      }
+    }
+
+    invokeCheckGame(gameCode, uid, state.rank, state.moves);
   };
 };
 
