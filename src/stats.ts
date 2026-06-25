@@ -1,27 +1,27 @@
-const kalmanEstimates = (
-  outcomes: boolean[],
-  processVar = 0.03,
-  x0 = 0,
-  v0 = 4,
-) => {
-  let x = x0; // mean
-  let v = v0; // variance
+// const kalmanEstimates = (
+//   outcomes: boolean[],
+//   processVar = 0.03,
+//   x0 = 0,
+//   v0 = 4,
+// ) => {
+//   let x = x0; // mean
+//   let v = v0; // variance
 
-  let means = [];
-  let variances = [];
+//   let means = [];
+//   let variances = [];
 
-  for (let i = 0; i < outcomes.length; i++) {
-    let result = kalmanEstimate(outcomes[i], x, v, processVar);
+//   for (let i = 0; i < outcomes.length; i++) {
+//     let result = kalmanEstimate(outcomes[i], x, v, processVar);
 
-    means.push(result[0]);
-    variances.push(result[1]);
+//     means.push(result[0]);
+//     variances.push(result[1]);
 
-    x = result[0];
-    v = result[1];
-  }
+//     x = result[0];
+//     v = result[1];
+//   }
 
-  return [means, variances] as const;
-};
+//   return [means, variances] as const;
+// };
 
 export const kalmanEstimate = (
   outcome: boolean,
@@ -57,4 +57,4 @@ export const kalmanWinrate = (mean: number, variance: number) => {
 
 const sigmoid = (x: number) => 1.0 / (1.0 + Math.exp(-x));
 
-const logit = (p: number) => Math.log(p / (1 - p));
+// const logit = (p: number) => Math.log(p / (1 - p));
