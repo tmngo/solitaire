@@ -369,15 +369,14 @@ const make = async () => {
 
   /** Updates the location and position for `cardCount` cards from the top of the stack  */
   const updateCardLocations = (state: State, b: number, n: number) => {
-    const [xScale, yScale] = Depot.getOffsetScale(state.depots[b]);
     const depot = state.depots[b];
+    const [xScale, yScale] = Depot.getOffsetScale(depot);
     const PER_CARD_OFFSET =
       xScale < yScale && depot.type === "column" ? cardColumnOffset() : 20;
     const cards =
       depot.type === "row-reverse" ? depot.cards.toReversed() : depot.cards;
     for (let i = cards.length - n; i < cards.length; i++) {
       const offset = i * PER_CARD_OFFSET;
-      cards[i].location = depot;
       cards[i].x = depot.rect.x + offset * xScale;
       cards[i].y = depot.rect.y + offset * yScale;
     }

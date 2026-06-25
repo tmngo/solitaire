@@ -48,7 +48,6 @@ export type CardSprite = {
   vx: number;
   vy: number;
   card: Card;
-  location: Depot;
   visible?: boolean;
 };
 

@@ -244,7 +244,6 @@ const setState = (
         vx: 0,
         vy: 0,
         card: Card.from(Suit.Unknown, 2),
-        location: state.depots[i],
       };
       state.depots[i].cards.push(card);
       state.cards.push(card);
@@ -262,7 +261,6 @@ const setState = (
           vx: 0,
           vy: 0,
           card: Card.from(suit, rank),
-          location: state.depots[i],
         };
         state.depots[i].cards.push(card);
         state.cards.push(card);
