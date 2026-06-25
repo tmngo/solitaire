@@ -12,6 +12,7 @@ import hanafudaSpritesheetUrl from "./assets/hanafuda-rough-suited.png";
 import { Game, GameCode, isGameCode, State } from "./game";
 import { FreeCell } from "./games/freecell";
 import { Ikebana } from "./games/ikebana";
+import { kalmanEstimate, kalmanWinrate } from "./stats";
 
 const games: Record<GameCode, Game> = {
   sa: Sawayama,
@@ -19,28 +20,53 @@ const games: Record<GameCode, Game> = {
   ik: Ikebana,
 };
 
+type DailyRecord = [number, number, number];
+
 type Stats = Record<
   GameCode,
   {
     games: number;
     wins: number;
+    mean: number;
+    variance: number;
     lastDate: string;
+    days: DailyRecord[];
   }
 >;
 
 const getStats = (): Stats => {
-  const defaultStats = {
-    fc: { games: 0, wins: 0, lastDate: "" },
-    sa: { games: 0, wins: 0, lastDate: "" },
-    ik: { games: 0, wins: 0, lastDate: "" },
-  };
+  const newStat = (s?: {
+    games?: number;
+    wins?: number;
+    mean?: number;
+    variance?: number;
+    lastDate?: string;
+    days?: DailyRecord[];
+  }) => ({
+    games: 0,
+    wins: 0,
+    mean: 0,
+    variance: 4,
+    lastDate: "",
+    days: [],
+    ...s,
+  });
 
   const raw = window.localStorage.getItem("stats");
-  if (raw)
+  if (raw) {
+    const parsed = JSON.parse(raw);
     return {
-      ...defaultStats,
-      ...JSON.parse(raw),
+      fc: newStat(parsed.fc),
+      sa: newStat(parsed.sa),
+      ik: newStat(parsed.ik),
     };
+  }
+
+  const defaultStats: Stats = {
+    fc: newStat(),
+    sa: newStat(),
+    ik: newStat(),
+  };
 
   return defaultStats;
 };
@@ -49,17 +75,26 @@ const setStats = (value: Stats) => {
   window.localStorage.setItem("stats", JSON.stringify(value));
 };
 
-const renderStats = (stats: { games: number; wins: number }) => {
+const renderStats = (stats: {
+  games: number;
+  wins: number;
+  mean: number;
+  variance: number;
+}) => {
   const gamesEl = document.querySelector<HTMLSelectElement>("#stats-g");
   const winsEl = document.querySelector<HTMLSelectElement>("#stats-w");
   const winrateEl = document.querySelector<HTMLSelectElement>("#stats-r");
-  if (gamesEl && winsEl && winrateEl) {
+  const expWinrateEl = document.querySelector<HTMLSelectElement>("#stats-kr");
+  const kalman = kalmanWinrate(stats.mean, stats.variance);
+  if (gamesEl && winsEl && winrateEl && expWinrateEl) {
     gamesEl.innerText = stats.games.toFixed(0);
     winsEl.innerText = stats.wins.toFixed(0);
     winrateEl.innerText =
       stats.games === 0
         ? "-"
         : ((100 * stats.wins) / stats.games).toFixed(0) + "%";
+    expWinrateEl.innerText =
+      stats.games === 0 ? "-" : `${(100 * kalman.prob).toFixed(0)}%`;
   }
 };
 
@@ -184,7 +219,8 @@ const make = async () => {
       <div id="stats">
         <div>Games</div><div id="stats-g" class="num">0</div>
         <div>Wins</div><div id="stats-w" class="num">0</div>
-        <div>Winrate</div><div id="stats-r" class="num">-</div>
+        <div class="num-small">Average <br> win rate</div><div id="stats-r" class="num">-</div>
+        <div class="num-small">Expected <br> win rate</div><div id="stats-kr" class="num">-</div>
       </div>
       <div id="gid-container">
         <div id="gid-label"></div>
@@ -1251,6 +1287,29 @@ js: ${jsTime.toFixed(1)}ms
 
     stats[gameCode].games += 1;
     if (isWin) stats[gameCode].wins += 1;
+
+    const [mean, variance] = kalmanEstimate(
+      isWin,
+      stats[gameCode].mean,
+      stats[gameCode].variance,
+    );
+    stats[gameCode].mean = mean;
+    stats[gameCode].variance = variance;
+
+    if (state.day) {
+      const n = stats[gameCode].days.length;
+      const last = stats[gameCode].days[n - 1];
+      if (n > 0 && last[0] === state.day) {
+        last[1] += 1;
+        if (isWin) last[2] = 1;
+      } else {
+        if (isWin) {
+          stats[gameCode].days.push([state.day, 1, 1]);
+        } else {
+          stats[gameCode].days.push([state.day, 1, 0]);
+        }
+      }
+    }
 
     setStats(stats);
     renderStats(stats[gameCode]);
