@@ -1158,17 +1158,16 @@ js: ${jsTime.toFixed(1)}ms
       );
     }
 
+    state.selection.a = undefined;
+    state.selection.n = undefined;
+    document.body.style.cursor = "auto";
+
     if (game.isWin(state)) {
       handleOutcome(state.gameCode, true);
       window.localStorage.removeItem("state");
+    } else {
+      saveState(state);
     }
-
-    state.selection.a = undefined;
-    state.selection.n = undefined;
-
-    saveState(state);
-
-    document.body.style.cursor = "auto";
   });
 
   const getDestDepot = (
