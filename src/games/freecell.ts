@@ -28,6 +28,11 @@ export enum FreeCellDepot {
 }
 
 export const FreeCell: Game = {
+  instructions: () => `To win, build the foundations up by suit from A to K.
+  
+  Cards of alternating colors may be stacked in descending order.
+  
+  Stacks of cards may be moved as a unit, but only if it's possible to make the same move one card a time using free cells and empty columns as intermediate storage.`,
   foundations: () => [
     FreeCellDepot.Foundation1,
     FreeCellDepot.Foundation2,

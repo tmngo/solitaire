@@ -309,6 +309,7 @@ const cardWidth = 59;
 const marginX = 11;
 
 export const Klondike: Game = {
+  instructions: () => ``,
   foundations: () => [
     KlondikeDepot.Foundation1,
     KlondikeDepot.Foundation2,

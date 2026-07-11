@@ -75,12 +75,9 @@ const setStats = (value: Stats) => {
   window.localStorage.setItem("stats", JSON.stringify(value));
 };
 
-const renderStats = (stats: {
-  games: number;
-  wins: number;
-  mean: number;
-  variance: number;
-}) => {
+const renderStats = (selectedGameCode: GameCode, s: Stats) => {
+  const stats = s[selectedGameCode];
+
   const gamesEl = document.querySelector<HTMLSelectElement>("#stats-g");
   const winsEl = document.querySelector<HTMLSelectElement>("#stats-w");
   const winrateEl = document.querySelector<HTMLSelectElement>("#stats-r");
@@ -95,6 +92,12 @@ const renderStats = (stats: {
         : ((100 * stats.wins) / stats.games).toFixed(0) + "%";
     expWinrateEl.innerText =
       stats.games === 0 ? "-" : `${(100 * kalman.prob).toFixed(0)}%`;
+  }
+
+  const instructionsElement =
+    document.querySelector<HTMLSelectElement>("#instructions");
+  if (instructionsElement) {
+    instructionsElement.innerText = games[selectedGameCode].instructions();
   }
 };
 
@@ -222,6 +225,7 @@ const make = async () => {
         <div class="num-small">Average <br> win rate</div><div id="stats-r" class="num">-</div>
         <div class="num-small">Expected <br> win rate</div><div id="stats-kr" class="num">-</div>
       </div>
+      <div id="instructions"></div>
       <div id="gid-container">
         <div id="gid-label"></div>
         <div id="gid"></div>
@@ -264,7 +268,7 @@ const make = async () => {
       } else {
         selectedGameCode = "sa";
       }
-      renderStats(getStats()[selectedGameCode]);
+      renderStats(selectedGameCode, getStats());
     };
   }
 
@@ -473,7 +477,7 @@ const make = async () => {
       }
     }
 
-    renderStats(getStats()[gameCode]);
+    renderStats(gameCode, getStats());
   };
 
   const loadGame = (saved: State) => {
@@ -1311,7 +1315,7 @@ js: ${jsTime.toFixed(1)}ms
     }
 
     setStats(stats);
-    renderStats(stats[gameCode]);
+    renderStats(gameCode, stats);
 
     // Win animation
     if (gameCode === "ik") {

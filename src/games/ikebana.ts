@@ -293,6 +293,13 @@ const score = (state: { depots: Depot[] }) => {
 };
 
 export const Ikebana: Game = {
+  instructions: () =>
+    `To win, arrange all cards into 4 columns descending in suit from 12 to 1.
+  
+  Cards may be stacked in descending order by suit. Cards with non-basic ranks (brights, ribbons, and animals) may also be stacked. Stacks of cards may be moved as a unit, but only if they are in descending order by suit.
+  
+  Only 12s may be placed in empty columns.`,
+
   foundations: () => [],
   getAutomaticMoves: () => [],
   initDepots,

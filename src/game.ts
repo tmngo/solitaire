@@ -13,6 +13,7 @@ export interface SolitaireOptions {
 }
 
 export interface Game {
+  instructions: () => string;
   foundations: () => number[];
   getAutomaticMoves: (
     state: { depots: Depot[]; hand: CardSprite[] },
