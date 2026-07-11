@@ -56,9 +56,9 @@ export interface Game {
   ) => void;
 }
 
-export type GameCode = "fc" | "sa" | "ik";
+export type GameCode = "fc" | "ft" | "sa" | "ik";
 
-const gameCodes = ["fc", "sa", "ik"];
+const gameCodes = ["fc", "ft", "sa", "ik"];
 
 export const isGameCode = (x: string): x is GameCode => gameCodes.includes(x);
 

@@ -81,10 +81,10 @@ export class BitString {
 
 export interface Card {
   suit: number;
-  rank: Rank;
+  rank: number;
 }
 
-const from = (suit: number, rank: Rank): Card => ({ suit, rank });
+const from = (suit: number, rank: number): Card => ({ suit, rank });
 
 const isRank = (r: number): r is Rank => r >= 0 && r < 13;
 

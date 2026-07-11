@@ -13,10 +13,12 @@ import { Game, GameCode, isGameCode, State } from "./game";
 import { FreeCell } from "./games/freecell";
 import { Ikebana } from "./games/ikebana";
 import { kalmanEstimate, kalmanWinrate } from "./stats";
+import { Fortune } from "./games/fortune";
 
 const games: Record<GameCode, Game> = {
   sa: Sawayama,
   fc: FreeCell,
+  ft: Fortune,
   ik: Ikebana,
 };
 
@@ -57,6 +59,7 @@ const getStats = (): Stats => {
     const parsed = JSON.parse(raw);
     return {
       fc: newStat(parsed.fc),
+      ft: newStat(parsed.ft),
       sa: newStat(parsed.sa),
       ik: newStat(parsed.ik),
     };
@@ -64,6 +67,7 @@ const getStats = (): Stats => {
 
   const defaultStats: Stats = {
     fc: newStat(),
+    ft: newStat(),
     sa: newStat(),
     ik: newStat(),
   };
@@ -108,6 +112,7 @@ const testIDs: Record<GameCode, string[]> = {
   fc: [
     "43256203036895422154045006583307961065836537730185175986996931348755583443611",
   ],
+  ft: [],
   ik: ["2203188438857840767748193379387779671538572328448363630379"],
 };
 
@@ -250,6 +255,7 @@ const make = async () => {
     const gameOptions = [
       { code: "sa", name: "Sawayama" },
       { code: "fc", name: "FreeCell" },
+      { code: "ft", name: "Fortune" },
       { code: "ik", name: "Ikebana" },
     ];
 
@@ -653,15 +659,21 @@ const make = async () => {
         positions[i] = Vec2.from(pos3d[0] / zClip, pos3d[1] / zClip);
       }
 
-      const { col, row } =
-        // card.location?.type === "pile" &&
-        // card.location?.cards.length > 1 &&
-        // card.x === card.location.rect.x
-        //   ? { col: 1, row: 4 }
-        //   :
-        state.gameCode === "ik"
-          ? { col: card.card.suit, row: 3 - card.card.rank }
-          : { col: card.card.rank, row: card.card.suit };
+      const getSpritesheetCoords = () => {
+        if (state.gameCode === "ik") {
+          return { col: card.card.suit, row: 3 - card.card.rank };
+        }
+        if (state.gameCode === "ft" && card.card.suit === 4) {
+          return {
+            col: card.card.rank % 11,
+            row: 5 + Math.floor(card.card.rank / 11),
+          };
+        }
+
+        return { col: card.card.rank, row: card.card.suit };
+      };
+
+      const { col, row } = getSpritesheetCoords();
 
       const uvs = getSpritesheetUVs({
         texture,
