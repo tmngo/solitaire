@@ -627,8 +627,12 @@ const make = async () => {
       // update velocity
       card.vx += ax * props.dt;
       card.vy += ay * props.dt;
-      card.vx = Math.min(Math.max(-2500, card.vx), 2500);
-      card.vy = Math.min(Math.max(-2500, card.vy), 2500);
+      const maxSpeed = 2500;
+      if (card.vx * card.vx + card.vy * card.vy > maxSpeed * maxSpeed) {
+        const mag = Math.sqrt(card.vx * card.vx + card.vy * card.vy);
+        card.vx = (card.vx / mag) * maxSpeed;
+        card.vy = (card.vy / mag) * maxSpeed;
+      }
 
       const x0 = card.currentX + card.vx * props.dt;
       const y0 = card.currentY + card.vy * props.dt;
